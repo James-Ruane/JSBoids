@@ -70,9 +70,22 @@ export default class SimpleRenderer {
             sphere.mesh.position.z = sphere.position.z;
         });
 
+        const mills = this.flock.getWindmills();
+        mills.forEach(mill => {
+            this.scene.add(mill.mesh);
+            mill.mesh.position.x = mill.position.x;
+            mill.mesh.position.y = mill.position.y;
+            mill.mesh.position.z = mill.position.z;
+        });
+
         
-        this.geometry = new THREE.SphereGeometry( 8, 16, 8 ); 
+        this.geometry = new THREE.SphereGeometry( 2, 16, 8 ); 
         this.material = new THREE.MeshBasicMaterial( { color: 0xff0000 } );
+        this.mesh = new THREE.Mesh( this.geometry, this.material );
+        this.mesh.position.x = this.flock.endPoint.x;
+        this.mesh.position.y = this.flock.endPoint.y;
+        this.mesh.position.z = this.flock.endPoint.z;
+        this.scene.add( this.mesh );
 
         this.renderer.render(this.scene, this.camera);
     }

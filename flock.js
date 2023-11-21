@@ -1,12 +1,16 @@
 export default class Flock{
     constructor(bound){
         this.flock = [];
+        this.windmills = [];
         this.bound = bound;
 
         this.allignWeight = 1;
         this.cohesionWeight = 0.02;
         this.separationWeight = 0.2;
         this.avoidWeight = 1;
+        this.endWeight = 0.0005;
+
+        this.endPoint = new THREE.Vector3(62.5, 32.5, 0)
     }
 
     pushToFlock(boid){
@@ -17,30 +21,85 @@ export default class Flock{
         return this.flock;
     }
 
+    pushToWindmills(mill){
+        this.windmills.push(mill);
+    }
+
+    getWindmills(){
+        return this.windmills;
+    }
+
     iterate(){
         for(var i=0;i<this.flock.length;i++){
             const boid = this.flock[i];
             this.edges(boid);
             this.flocking(boid);
             boid.update();
+            this.collision(boid);
         }
+        this.windmillUpdate(this.windmills);
+    }
+
+    windmillUpdate(windmills){
+        for (var i=0; i<windmills.length; i++){
+            const windmill = windmills[i];
+            windmill.update();
+            if (windmill.position.y < 0){
+                windmill.position.y += this.bound.y;
+            }
+        }        
     }
 
     flocking(boid){
         let acceleration = new THREE.Vector3(0,0,0);
         
-        
         let avoid = this.edge(boid);
         let avgA = this.allign(boid);
         let avgC = this.cohes(boid);
         let avgS = this.sep(boid);
+        let end = this.end(boid);
+
         acceleration = acceleration.add(avgA.multiplyScalar(this.allignWeight));
         acceleration = acceleration.add(avgC.multiplyScalar(this.cohesionWeight));
         acceleration = acceleration.add(avgS.multiplyScalar(this.separationWeight));
         acceleration = acceleration.add(avoid.multiplyScalar(this.avoidWeight));
+        acceleration = acceleration.add(end.multiplyScalar(this.endWeight));
+
         boid.acceleration = acceleration
     }
 
+
+    avoid(boid){
+        
+    }
+
+    collision(boid){
+
+        this.windmills.forEach(mill => {
+            const maxX = mill.position.x + 125/2;
+            const minX = mill.position.x - 125/2;
+            const maxY = mill.position.y + 10/2;
+            const minY = mill.position.y - 10/2;
+            const minZ = mill.position.z - 10/2;
+            const maxZ = mill.position.z + 10/2;
+          
+            if (boid.position.x > minX && boid.position.x < maxX){
+                if (boid.position.y > minY && boid.position.y < maxY){
+                    if(boid.position.z > minZ && boid.position.z < maxZ){
+                        console.log("collide");
+                    }
+                }
+            }
+        })
+    }
+
+    end(boid){
+        let avgC = new THREE.Vector3(this.endPoint.x , this.endPoint.y, this.endPoint.z);
+        avgC.set(avgC.x - boid.position.x, avgC.y - boid.position.y, avgC.z - boid.position.z);
+        const allignMag = Math.sqrt(avgC.x**2 + avgC.y**2 + avgC.z**2);
+        avgC.set(avgC.x / allignMag, avgC.y / allignMag, avgC.z / allignMag);
+        return avgC;
+    }
 
     allign(boid){
         let avgA = new THREE.Vector3(0,0,0);
@@ -133,7 +192,6 @@ export default class Flock{
         }
 
         return avoid;
-
     }
 
     edges(boid) {
