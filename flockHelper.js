@@ -22,19 +22,21 @@ export default class flockHelper{
     
     addBoids(count=2) {
         for(let i=0; i<count; i++) {
-            const x = Math.floor(Math.random() * this.bound.x);
-            const y = Math.floor(Math.random() * this.bound.y);
-            const z = Math.floor(this.random(this.spawnArea.z, this.bound.z));            
+            const x = Math.ceil(Math.random() * this.bound.x) - 5;
+            const y = Math.ceil(Math.random() * this.bound.y) - 5;
+            const z = Math.ceil(this.random(this.spawnArea.z, this.bound.z)) - 5;            
             const boid = new Boid(x,y,z);
             this.flock.pushToFlock(boid);
         }
     }
 
+    // TODO add more windmills 
+    // TODO add more blades to windmills
     addWindmill() {
         const x = 62.5;
         const y = 75;
         const z = 100;            
-        const windmill = new Windmill(x,y,z);
+        const windmill = new Windmill(x,y,z, this.bound);
         this.flock.pushToWindmills(windmill);
     }
 

@@ -8,7 +8,7 @@ class Application {
         this.simpleRenderer = undefined;
         this.boids = undefined;
         this.flock = undefined;
-        this.numBoids = 100; 
+        this.numBoids = 200; 
         this.bound = new THREE.Vector3(125, 75, 375);
         
     }
@@ -28,6 +28,7 @@ class Application {
     }
 
     render() {
+        // TODO Outputs so I can gether data to use in results. I.e. number of collisions per species, more likely to get hit bu upward / downward moving windmill ect.
         window.requestAnimationFrame(this.render.bind(this), 1000/30);
         this.flock.iterate();
         this.simpleRenderer.render();   
