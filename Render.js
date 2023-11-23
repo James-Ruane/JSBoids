@@ -61,13 +61,23 @@ export default class SimpleRenderer {
 
     render() {   
 
-        const spheres = this.flock.getFlock();
+        const boids = this.flock.getFlock();
 
-        spheres.forEach(sphere => {    
-            this.scene.add(sphere.mesh);
-            sphere.mesh.position.x = sphere.position.x;
-            sphere.mesh.position.y = sphere.position.y; 
-            sphere.mesh.position.z = sphere.position.z;
+        boids.forEach(boid => {    
+            this.scene.add(boid.mesh);
+
+            // apply asymptotic smoothing - prevents bouncing
+            boid.mesh.position.x = 0.9*boid.mesh.position.x + 0.1*boid.position.x;
+            boid.mesh.position.y = 0.9*boid.mesh.position.y + 0.1*boid.position.y;
+            boid.mesh.position.z = 0.9*boid.mesh.position.z + 0.1*boid.position.z;
+            boid.localVelocity.x = 0.9*boid.localVelocity.x + 0.1*boid.velocity.x;
+            boid.localVelocity.y = 0.9*boid.localVelocity.y + 0.1*boid.velocity.y;
+            boid.localVelocity.z = 0.9*boid.localVelocity.z + 0.1*boid.velocity.z;
+
+            boid.mesh.lookAt(boid.mesh.position.x + boid.localVelocity.x,
+                        boid.mesh.position.y + boid.localVelocity.y,
+                        boid.mesh.position.z + boid.localVelocity.z);
+            
         });
 
         const mills = this.flock.getWindmills();

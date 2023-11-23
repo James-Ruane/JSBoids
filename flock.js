@@ -7,7 +7,7 @@ export default class Flock{
         this.allignWeight = 1;
         this.cohesionWeight = 0.02;
         this.separationWeight = 0.2;
-        this.avoidWeight = 1;
+        this.avoidWeight = 0.5;
         this.endWeight = 0.0005;
 
         this.endPoint = new THREE.Vector3(62.5, 32.5, 0)
@@ -32,15 +32,15 @@ export default class Flock{
     iterate(){
         for(var i=0;i<this.flock.length;i++){
             const boid = this.flock[i];
-            this.edges(boid);
+            this.periodicBoundary(boid);
             this.flocking(boid);
-            boid.update();
+            boid.update(this.windmills);
             this.collision(boid);
         }
-        this.windmillUpdate(this.windmills);
+        this.windmillEdge(this.windmills);
     }
 
-    windmillUpdate(windmills){
+    windmillEdge(windmills){
         for (var i=0; i<windmills.length; i++){
             const windmill = windmills[i];
             windmill.update();
@@ -53,39 +53,100 @@ export default class Flock{
     flocking(boid){
         let acceleration = new THREE.Vector3(0,0,0);
         
-        let avoid = this.edge(boid);
+        let boundAsObj = this.boundAsObj(boid);
         let avgA = this.allign(boid);
         let avgC = this.cohes(boid);
         let avgS = this.sep(boid);
         let end = this.end(boid);
+        let avoidance = this.avoidance(boid);
 
-        acceleration = acceleration.add(avgA.multiplyScalar(this.allignWeight));
-        acceleration = acceleration.add(avgC.multiplyScalar(this.cohesionWeight));
-        acceleration = acceleration.add(avgS.multiplyScalar(this.separationWeight));
-        acceleration = acceleration.add(avoid.multiplyScalar(this.avoidWeight));
-        acceleration = acceleration.add(end.multiplyScalar(this.endWeight));
-
+        if (avoidance.x != 0 || avoidance.y != 0 || avoidance.z != 0){
+            acceleration = acceleration.add(avoidance.multiplyScalar(0.5));
+            acceleration = acceleration.add(end.multiplyScalar(0.005));
+        } else{            
+            acceleration = acceleration.add(avgA.multiplyScalar(this.allignWeight));
+            acceleration = acceleration.add(avgC.multiplyScalar(this.cohesionWeight));
+            acceleration = acceleration.add(avgS.multiplyScalar(this.separationWeight));
+            acceleration = acceleration.add(end.multiplyScalar(this.endWeight));
+        }
+        acceleration = acceleration.add(boundAsObj.multiplyScalar(this.avoidWeight));
         boid.acceleration = acceleration
     }
 
+    avoidance(boid){
+        const avoid = new THREE.Vector3(0,0,0);
+        const pointsInFOV = [];
+        for(var i=0; i<this.windmills.length; i++){
+            for (var j=0; j<this.windmills[i].points.length; j++){
+                const point = this.windmills[i].points[j];
+                if (this.inFOV(boid, this.windmills[i], point)){
+                    pointsInFOV.push(point);
+                }
+            }
+        }
+        if (pointsInFOV.length > 0){
+            // TODO maybe find the closest point to the boid, instead of first
+            const distance =  Math.sqrt((boid.position.x - pointsInFOV[0][0])**2 + (boid.position.y - pointsInFOV[0][1])**2 + (boid.position.z - pointsInFOV[0][2])**2)
+            const oy = boid.position.y - pointsInFOV[0][1];
+            avoid.y += (oy/distance)/distance;
+        }
+        return avoid;
+    }
 
-    avoid(boid){
-        
+    inFOV(boid, mill, point){
+
+        const x = point[0];
+        const y = point[1];
+        const z = point[2]; 
+
+        const bx = boid.position.x;
+        const by = boid.position.y;
+        const bz = boid.position.z;
+
+        // TODO here (*)
+        const maxX = mill.position.x + 125/2;
+        const minX = mill.position.x - 125/2;
+        const maxY = mill.position.y + 10/2;
+        const minY = mill.position.y - 10/2;
+        const minZ = mill.position.z - 2/2;
+        const maxZ = mill.position.z + 2/2;
+
+
+        // TODO should test this properly, feels right tho
+
+        if (x > minX && x < maxX){
+            if (y > minY && y < maxY){
+                if(z > minZ && z < maxZ){
+                    // point is in windmill 
+                    if(((x - bx)**2 + (y - by)**2 + ((z - bz)**2)) < boid.vision*500){
+                        //point is in windmill and in boid radius
+                        if (x - y > 0 && x + y > 0){
+                            //point is in windmill and in boid radius and within fov planes
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+
     }
 
     collision(boid){
 
         this.windmills.forEach(mill => {
+            // TODO here (*)
             const maxX = mill.position.x + 125/2;
             const minX = mill.position.x - 125/2;
             const maxY = mill.position.y + 10/2;
             const minY = mill.position.y - 10/2;
-            const minZ = mill.position.z - 10/2;
-            const maxZ = mill.position.z + 10/2;
+            const minZ = mill.position.z - 2/2;
+            const maxZ = mill.position.z + 2/2;
           
             if (boid.position.x > minX && boid.position.x < maxX){
                 if (boid.position.y > minY && boid.position.y < maxY){
                     if(boid.position.z > minZ && boid.position.z < maxZ){
+                        // TODO make this better need some action to show boid has been hit and a way to collect data from that
                         console.log("collide");
                     }
                 }
@@ -167,7 +228,7 @@ export default class Flock{
 
     }
 
-    edge(boid){
+    boundAsObj(boid){
         let avoid = new THREE.Vector3(0,0,0);
 
         const radius = 5;
@@ -194,7 +255,7 @@ export default class Flock{
         return avoid;
     }
 
-    edges(boid) {
+    periodicBoundary(boid) {
 
         if (boid.position.x < 0){
             boid.position.x += this.bound.x;
