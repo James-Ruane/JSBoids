@@ -12,7 +12,7 @@ export default class SimpleRenderer {
     init() {
         this.camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 100000 );     
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color( 0xffffff );
+        this.scene.background = new THREE.Color( 0xffc0cb );
         this.entityGeometry = new THREE.BoxGeometry( 5, 5, 15 );
 
         const geometry = new THREE.BoxGeometry(this.bound.x, this.bound.y, this.bound.z);
