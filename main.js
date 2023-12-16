@@ -8,8 +8,8 @@ class Application {
         this.simpleRenderer = undefined;
         this.boids = undefined;
         this.flock = undefined;
-        this.numBoids = 200; 
-        this.bound = new THREE.Vector3(125, 75, 375);
+        this.numBoids = 100; 
+        this.bound = new THREE.Vector3(125, 75, 375); 
         
     }
 

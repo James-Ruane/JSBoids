@@ -34,9 +34,12 @@ export default class flockHelper{
     // TODO add more blades to windmills
     addWindmill() {
         const x = 62.5;
-        const y = 75;
-        const z = 100;            
-        const windmill = new Windmill(x,y,z, this.bound);
+        const y = 37.5;
+        const z = 100;     
+        const d = 125;
+        const h = 10;
+        const w = 2;       
+        const windmill = new Windmill(x,y,z, d, h, w, this.bound);
         this.flock.pushToWindmills(windmill);
     }
 
