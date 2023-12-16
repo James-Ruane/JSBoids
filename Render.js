@@ -63,29 +63,36 @@ export default class SimpleRenderer {
 
         const boids = this.flock.getFlock();
 
-        boids.forEach(boid => {    
-            this.scene.add(boid.mesh);
+        boids.forEach(boid => {  
+            if (boid.dead){
+                this.scene.add(boid.deadMesh);
+                this.scene.remove(boid.mesh);
+                boid.deadMesh.position.x = boid.mesh.position.x;
+                boid.deadMesh.position.y = boid.mesh.position.y;
+                boid.deadMesh.position.z = boid.mesh.position.z;
+            }  else{
+                this.scene.add(boid.mesh);
 
-            // apply asymptotic smoothing - prevents bouncing
-            boid.mesh.position.x = 0.9*boid.mesh.position.x + 0.1*boid.position.x;
-            boid.mesh.position.y = 0.9*boid.mesh.position.y + 0.1*boid.position.y;
-            boid.mesh.position.z = 0.9*boid.mesh.position.z + 0.1*boid.position.z;
-            boid.localVelocity.x = 0.9*boid.localVelocity.x + 0.1*boid.velocity.x;
-            boid.localVelocity.y = 0.9*boid.localVelocity.y + 0.1*boid.velocity.y;
-            boid.localVelocity.z = 0.9*boid.localVelocity.z + 0.1*boid.velocity.z;
+                // apply asymptotic smoothing - prevents bouncing
+                boid.mesh.position.x = 0.9*boid.mesh.position.x + 0.1*boid.position.x;
+                boid.mesh.position.y = 0.9*boid.mesh.position.y + 0.1*boid.position.y;
+                boid.mesh.position.z = 0.9*boid.mesh.position.z + 0.1*boid.position.z;
+                boid.localVelocity.x = 0.9*boid.localVelocity.x + 0.1*boid.velocity.x;
+                boid.localVelocity.y = 0.9*boid.localVelocity.y + 0.1*boid.velocity.y;
+                boid.localVelocity.z = 0.9*boid.localVelocity.z + 0.1*boid.velocity.z;
 
-            boid.mesh.lookAt(boid.mesh.position.x + boid.localVelocity.x,
-                        boid.mesh.position.y + boid.localVelocity.y,
-                        boid.mesh.position.z + boid.localVelocity.z);
+                boid.mesh.lookAt(boid.mesh.position.x + boid.localVelocity.x,
+                            boid.mesh.position.y + boid.localVelocity.y,
+                            boid.mesh.position.z + boid.localVelocity.z);
             
-        });
+    }});
 
         const mills = this.flock.getWindmills();
         mills.forEach(mill => {
             this.scene.add(mill.mesh);
             mill.mesh.position.x = mill.position.x;
             mill.mesh.position.y = mill.position.y;
-            mill.mesh.position.z = mill.position.z;
+            mill.mesh.position.z = mill.position.z;            
         });
 
         

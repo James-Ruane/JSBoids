@@ -32,10 +32,12 @@ export default class Flock{
     iterate(){
         for(var i=0;i<this.flock.length;i++){
             const boid = this.flock[i];
-            this.periodicBoundary(boid);
-            this.flocking(boid);
-            boid.update(this.windmills);
-            this.collision(boid);
+            if (!boid.dead) {
+                this.periodicBoundary(boid);
+                this.flocking(boid);
+                boid.update(this.windmills);
+                this.collision(boid);
+            }
         }
         this.windmillEdge(this.windmills);
     }
@@ -103,53 +105,35 @@ export default class Flock{
         const by = boid.position.y;
         const bz = boid.position.z;
 
-        // TODO here (*)
-        const maxX = mill.position.x + 125/2;
-        const minX = mill.position.x - 125/2;
-        const maxY = mill.position.y + 10/2;
-        const minY = mill.position.y - 10/2;
-        const minZ = mill.position.z - 2/2;
-        const maxZ = mill.position.z + 2/2;
-
+        const minZ = mill.position.z - mill.width / 2;
+        const maxZ = mill.position.z + mill.width / 2;
 
         // TODO should test this properly, feels right tho
 
-        if (x > minX && x < maxX){
-            if (y > minY && y < maxY){
-                if(z > minZ && z < maxZ){
-                    // point is in windmill 
-                    if(((x - bx)**2 + (y - by)**2 + ((z - bz)**2)) < boid.vision*500){
-                        //point is in windmill and in boid radius
-                        if (x - y > 0 && x + y > 0){
-                            //point is in windmill and in boid radius and within fov planes
-                            return true;
-                        }
+        if (this.pointInWindmill(mill, x, y, z)) {
+            if(z > minZ && z < maxZ){
+                // point is in windmill 
+                if(((x - bx)**2 + (y - by)**2 + ((z - bz)**2)) < boid.vision*125){
+                    //point is in windmill and in boid radius
+                    if (x - y > 0 && x + y > 0){
+                        //point is in windmill and in boid radius and within fov planes
+                        return true;
                     }
                 }
             }
         }
         return false;
-
     }
 
     collision(boid){
 
         this.windmills.forEach(mill => {
-            // TODO here (*)
-            const maxX = mill.position.x + 125/2;
-            const minX = mill.position.x - 125/2;
-            const maxY = mill.position.y + 10/2;
-            const minY = mill.position.y - 10/2;
-            const minZ = mill.position.z - 2/2;
-            const maxZ = mill.position.z + 2/2;
-          
-            if (boid.position.x > minX && boid.position.x < maxX){
-                if (boid.position.y > minY && boid.position.y < maxY){
-                    if(boid.position.z > minZ && boid.position.z < maxZ){
-                        // TODO make this better need some action to show boid has been hit and a way to collect data from that
-                        console.log("collide");
-                    }
-                }
+            const mX = boid.mesh.position.x;
+            const mY = boid.mesh.position.y;
+            const mZ = boid.mesh.position.z;
+
+            if (this.pointInWindmill(mill, mX, mY, mZ)){
+                boid.dead=true;
             }
         })
     }
@@ -280,8 +264,29 @@ export default class Flock{
 
     }
 
+    pointInWindmill(mill, x, y, z){
+        const TRX = mill.TRX
+        const TRY = mill.TRY
+        const BLX = mill.BLX
+        const BLY = mill.BLY
+        const TLX = mill.TLX
+        const TLY = mill.TLY
+        const BRX = mill.BRX
+        const BRY = mill.BRY
+        const minZ = mill.position.z - mill.width / 2;
+        const maxZ = mill.position.z + mill.width / 2;
+
+        const a = (TLY-TRY) / (TLX-TRX)
+        const b = TRY - (a * TRX)
+
+        const a2 = (BRY-BLY) / (BRX-BLX)
+        const b2 = BLY - (a2 * BLX)
+
+        if (((y < ((a * x) + b)) && ((y > ((a2 * x) + b2)))) || (y > ((a * x) + b)) && ((y < ((a2 * x) + b2)))) {
+            if(z > minZ && z < maxZ){
+                return true;
+            }
+        }
+    }   
 }
-
-
-
 

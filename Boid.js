@@ -3,6 +3,7 @@ export default class Boid{
     constructor(x,y,z){
         this.geometry = new THREE.SphereGeometry( 1, 64, 32 );    
         this.material = new THREE.MeshBasicMaterial( { color: 0x0000ff } ); 
+        this.deadMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000 } ); 
         this.mesh = new THREE.Mesh( this.geometry, this.material );
         this.localVelocity = new THREE.Vector3(0,0,0);
        
@@ -10,6 +11,9 @@ export default class Boid{
         this.velocity = new THREE.Vector3(this.random(-2,2), this.random(-2,2), this.random(-2,2));
         this.acceleration = new THREE.Vector3(this.random(-2, 2), this.random(-2,2), this.random(-2,2));
                 
+        this.dead = false;        
+        this.deadMesh = new THREE.Mesh( this.geometry, this.deadMaterial );
+
         this.vision = 10;
         this.maxSpeed = 0.3;
         this.maxForce = 0.01;
