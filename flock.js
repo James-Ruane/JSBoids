@@ -120,8 +120,7 @@ export default class Flock{
         }
         return false;
     }
-            
-    
+      
     collision(boid){
 
         this.windmills.forEach(mill => {
