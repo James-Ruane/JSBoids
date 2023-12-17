@@ -72,18 +72,20 @@ export default class SimpleRenderer {
                 boid.deadMesh.position.z = boid.mesh.position.z;
             }  else{
                 this.scene.add(boid.mesh);
-
+                boid.mesh.position.x = boid.position.x;
+                boid.mesh.position.y = boid.position.y;
+                boid.mesh.position.z = boid.position.z;
                 // apply asymptotic smoothing - prevents bouncing
-                boid.mesh.position.x = 0.9*boid.mesh.position.x + 0.1*boid.position.x;
-                boid.mesh.position.y = 0.9*boid.mesh.position.y + 0.1*boid.position.y;
-                boid.mesh.position.z = 0.9*boid.mesh.position.z + 0.1*boid.position.z;
-                boid.localVelocity.x = 0.9*boid.localVelocity.x + 0.1*boid.velocity.x;
-                boid.localVelocity.y = 0.9*boid.localVelocity.y + 0.1*boid.velocity.y;
-                boid.localVelocity.z = 0.9*boid.localVelocity.z + 0.1*boid.velocity.z;
+                // boid.mesh.position.x = 0.9*boid.mesh.position.x + 0.1*boid.position.x;
+                // boid.mesh.position.y = 0.9*boid.mesh.position.y + 0.1*boid.position.y;
+                // boid.mesh.position.z = 0.9*boid.mesh.position.z + 0.1*boid.position.z;
+                // boid.localVelocity.x = 0.9*boid.localVelocity.x + 0.1*boid.velocity.x;
+                // boid.localVelocity.y = 0.9*boid.localVelocity.y + 0.1*boid.velocity.y;
+                // boid.localVelocity.z = 0.9*boid.localVelocity.z + 0.1*boid.velocity.z;
 
-                boid.mesh.lookAt(boid.mesh.position.x + boid.localVelocity.x,
-                            boid.mesh.position.y + boid.localVelocity.y,
-                            boid.mesh.position.z + boid.localVelocity.z);
+                // boid.mesh.lookAt(boid.mesh.position.x + boid.localVelocity.x,
+                //             boid.mesh.position.y + boid.localVelocity.y,
+                //             boid.mesh.position.z + boid.localVelocity.z);
             
     }});
 

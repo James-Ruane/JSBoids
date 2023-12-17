@@ -64,14 +64,14 @@ export default class Flock{
 
         if (avoidance.x != 0 || avoidance.y != 0 || avoidance.z != 0){
             acceleration = acceleration.add(avoidance.multiplyScalar(0.5));
-            acceleration = acceleration.add(end.multiplyScalar(0.005));
+            acceleration = acceleration.add(end.multiplyScalar(0.05));
         } else{            
             acceleration = acceleration.add(avgA.multiplyScalar(this.allignWeight));
             acceleration = acceleration.add(avgC.multiplyScalar(this.cohesionWeight));
             acceleration = acceleration.add(avgS.multiplyScalar(this.separationWeight));
             acceleration = acceleration.add(end.multiplyScalar(this.endWeight));
         }
-        acceleration = acceleration.add(boundAsObj.multiplyScalar(this.avoidWeight));
+       // acceleration = acceleration.add(boundAsObj.multiplyScalar(this.avoidWeight));
         boid.acceleration = acceleration
     }
 
@@ -81,7 +81,7 @@ export default class Flock{
         for(var i=0; i<this.windmills.length; i++){
             for (var j=0; j<this.windmills[i].points.length; j++){
                 const point = this.windmills[i].points[j];
-                if (this.inFOV(boid, this.windmills[i], point)){
+                if (this.windmillPointInFOV(boid, this.windmills[i], point)){
                     pointsInFOV.push(point);
                 }
             }
@@ -95,36 +95,32 @@ export default class Flock{
         return avoid;
     }
 
-    inFOV(boid, mill, point){
+    inFOV(boid, x, y, z){
+        const bx = boid.position.x;
+        const by = boid.position.y;
+        const bz = boid.position.z;
+        if(((x - bx)**2 + (y - by)**2 + ((z - bz)**2)) < boid.vision*125){
+            if (x - y > 0 && x + y > 0){
+                return true;
+            }
+        }
+    }
 
+    windmillPointInFOV(boid, mill, point){
         const x = point[0];
         const y = point[1];
         const z = point[2]; 
 
-        const bx = boid.position.x;
-        const by = boid.position.y;
-        const bz = boid.position.z;
-
-        const minZ = mill.position.z - mill.width / 2;
-        const maxZ = mill.position.z + mill.width / 2;
-
         // TODO should test this properly, feels right tho
-
         if (this.pointInWindmill(mill, x, y, z)) {
-            if(z > minZ && z < maxZ){
-                // point is in windmill 
-                if(((x - bx)**2 + (y - by)**2 + ((z - bz)**2)) < boid.vision*125){
-                    //point is in windmill and in boid radius
-                    if (x - y > 0 && x + y > 0){
-                        //point is in windmill and in boid radius and within fov planes
-                        return true;
-                    }
-                }
+            if(this.inFOV(boid, x, y, z)){
+                //point is in windmill and in boid radius and within fov planes
+                return true;     
             }
         }
         return false;
     }
-
+      
     collision(boid){
 
         this.windmills.forEach(mill => {
@@ -151,13 +147,16 @@ export default class Flock{
         let total = 0;
 
         this.flock.forEach(i => {
-            if (boid != i && 
-                boid.position.distanceTo(i.position) < boid.vision) {
-                total ++;
-                avgA.x += i.velocity.x;
-                avgA.y += i.velocity.y;
-                avgA.z += i.velocity.z;
-            }
+            var periodicBoids = this.getAllPos(i);
+            periodicBoids.forEach(pos => {
+                if (boid != i && 
+                    boid.position.distanceTo(pos) < boid.vision && this.inFOV(boid, pos.x, pos.y, pos.z) && !(boid.position == pos)) {
+                    total ++;
+                    avgA.x += i.velocity.x;
+                    avgA.y += i.velocity.y;
+                    avgA.z += i.velocity.z;
+                }
+            });
         });
 
         if (total > 0){
@@ -172,13 +171,16 @@ export default class Flock{
         let avgC = new THREE.Vector3(0,0,0);
         let total = 0;
         this.flock.forEach(i => {
-            if (boid != i && 
-                boid.position.distanceTo(i.position) < boid.vision) {
-                total ++;
-                avgC.x += i.position.x;
-                avgC.y += i.position.y;
-                avgC.z += i.position.z;
-            }
+            var periodicBoids = this.getAllPos(i);
+            periodicBoids.forEach(pos => {
+                if (boid != i && 
+                    boid.position.distanceTo(pos) < boid.vision && this.inFOV(boid, pos.x, pos.y, pos.z) && !(boid.position == pos)){
+                    total ++;
+                    avgC.x += pos.x;
+                    avgC.y += pos.y;
+                    avgC.z += pos.z;
+                }
+            });
         });
 
         if (total > 0){
@@ -193,21 +195,24 @@ export default class Flock{
     sep(boid){
         let avgS = new THREE.Vector3(0,0,0);
         this.flock.forEach(i => {
-        let dist = boid.position.distanceTo(i.position);
-        if (dist <= 0){
-            dist = 0.01;
-        } 
-        if (boid != i && dist < boid.vision) {
+            var periodicBoids = this.getAllPos(i);
+            periodicBoids.forEach(pos => {
+                let dist = boid.position.distanceTo(pos);
+                if (dist <= 0){
+                    dist = 0.01;
+                } 
+                if (boid != i && dist < boid.vision && this.inFOV(boid, pos.x, pos.y, pos.z)  && !(boid.position == pos)) {
+                    
+                    let sx = boid.position.x - pos.x;
+                    let sy = boid.position.y - pos.y;
+                    let sz = boid.position.z - pos.z;
 
-            let sx = boid.position.x - i.position.x;
-            let sy = boid.position.y - i.position.y;
-            let sz = boid.position.z - i.position.z;
-
-            avgS.x += (sx / dist) / dist;
-            avgS.y += (sy / dist) / dist;
-            avgS.z += (sz / dist) / dist;
-
-        }});
+                    avgS.x += (sx / dist) / dist;
+                    avgS.y += (sy / dist) / dist;
+                    avgS.z += (sz / dist) / dist;
+                }
+            });
+        });
         return avgS;
 
     }
@@ -288,5 +293,26 @@ export default class Flock{
             }
         }
     }   
+
+    getAllPos(boid){
+        const shiftedFlocks = [];
+        const x = this.bound.x;
+        const y = this.bound.y;
+        const z = this.bound.z;
+
+        var tempPosX = boid.position.x;
+        var tempPosY = boid.position.y;
+        var tempPosZ = boid.position.z;
+        
+        shiftedFlocks.push(new THREE.Vector3(tempPosX, tempPosY, tempPosZ));
+        shiftedFlocks.push(new THREE.Vector3(tempPosX + x, tempPosY, tempPosZ));
+        shiftedFlocks.push(new THREE.Vector3(tempPosX - x, tempPosY, tempPosZ));
+        shiftedFlocks.push(new THREE.Vector3(tempPosX, tempPosY + y, tempPosZ));
+        shiftedFlocks.push(new THREE.Vector3(tempPosX, tempPosY - y, tempPosZ));
+        shiftedFlocks.push(new THREE.Vector3(tempPosX, tempPosY, tempPosZ + z));
+        shiftedFlocks.push(new THREE.Vector3(tempPosX, tempPosY, tempPosZ - z));
+
+        return shiftedFlocks;
+    } 
 }
 
