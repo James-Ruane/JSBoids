@@ -19,9 +19,10 @@ export default class Boid{
         // The boids state (Dead / Alive)      
         this.dead = false;        
         // Boids characteristics 
-        this.vision = 10; // Vision range of the boid
+        this.vision = 20; // Vision range of the boid
         this.maxSpeed = 0.3; // Maximum speed the boid can achieve
         this.maxForce = 0.05; // Maximum steering force applied to the boid
+        this.fov = -100; // FOV of the boid //TODO convert this to an angle would be nice
         
     }
 

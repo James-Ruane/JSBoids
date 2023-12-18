@@ -9,10 +9,10 @@ export default class Flock{
         this.flock = []; // Array to hold boid objects
         this.windmills = []; // Array to hold windmill objects
         this.allignWeight = 1; // Weight for alignment behavior
-        this.cohesionWeight = 0.02; // Weight for cohesion behavior
+        this.cohesionWeight = 0.1; // Weight for cohesion behavior
         this.separationWeight = 0.2; // Weight for separation behavior
         this.avoidWeight = 0.5; // Weight for avoidance behavior
-        this.endWeight = 0.0005; // Weight for end behavior
+        this.endWeight = 0.001; // Weight for end behavior
         this.endPoint = new THREE.Vector3(62.5, 32.5, 0); // End point for end behavior calculations
     }
 
@@ -245,12 +245,23 @@ export default class Flock{
     * @returns {boolean} - Indicates whether the point is within the FOV.
     */  
     inFOV(boid, x, y, z){
+        const b = boid.fov;
         const bx = boid.position.x;
         const by = boid.position.y;
         const bz = boid.position.z;
-        if(((x - bx)**2 + (y - by)**2 + ((z - bz)**2)) < boid.vision*125){
-            if (x - y > 0 && x + y > 0){
-                return true;
+        x -= bx;
+        y -= by;
+        z -= bz;
+
+        if(((x)**2 + (y)**2 + ((z)**2)) < boid.vision**2){
+            if (b < 0){
+                if (x - (b*y) > 0 || x + (b*y) > 0){
+                    return true;
+                }
+            } else if (b > 0){
+                if (x - (b*y) > 0 && x + (b*y) > 0){
+                    return true;
+                }
             }
         }
     }
