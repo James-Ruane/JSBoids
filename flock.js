@@ -4,7 +4,7 @@ export default class Flock{
      * Represents a flock object.
      * @param {Object} bound - The bound object containing x, y, z dimensions of the simulation area.
      */
-    constructor(bound){
+    constructor(bound, headless){
         this.bound = bound; // Boundaries object containing x, y, z dimensions
         this.flock = []; // Array to hold boid objects
         this.windmills = []; // Array to hold windmill objects
@@ -13,7 +13,10 @@ export default class Flock{
         this.separationWeight = 0.2; // Weight for separation behavior
         this.avoidWeight = 0.5; // Weight for avoidance behavior
         this.endWeight = 0.001; // Weight for end behavior
-        this.endPoint = new THREE.Vector3(62.5, 32.5, 0); // End point for end behavior calculations
+        this.endPoint = new THREE.Vector3(62.5, 37.5, 0); // End point for end behavior calculations
+        
+        this.headless = headless;
+        this.collisionNum = 0;
     }
 
 
@@ -227,11 +230,21 @@ export default class Flock{
     */
     collision(boid){
         this.windmills.forEach(mill => {
-            const mX = boid.mesh.position.x;
-            const mY = boid.mesh.position.y;
-            const mZ = boid.mesh.position.z;
+            let mX = 0;
+            let mY = 0;
+            let mZ = 0;
+            if (this.headless){
+                mX = boid.position.x;
+                mY = boid.position.y;
+                mZ = boid.position.z;
+            }else{
+                mX = boid.mesh.position.x;
+                mY = boid.mesh.position.y;
+                mZ = boid.mesh.position.z;
+            }
             if (this.pointInWindmill(mill, mX, mY, mZ)){
                 boid.dead=true;
+                this.collisionNum++;
             }
         });
     }
@@ -330,6 +343,7 @@ export default class Flock{
         if (isInBetweenLines && z > minZ && z < maxZ) {
             return true;
         }
+        return false;
     }   
 
     /**

@@ -12,8 +12,8 @@ class Application {
         this.boids = undefined;
         this.flock = undefined;
         this.numBoids = 100; 
-        this.bound = new THREE.Vector3(125, 75, 375); 
-        
+        this.bound = new THREE.Vector3(125, 75, 375);  
+        this.headless = true;
     }
 
     /**
@@ -21,12 +21,13 @@ class Application {
      */
     init() {
         // Create a new flock object with provided boundaries
-        this.flock = new Flock(this.bound);
+        this.flock = new Flock(this.bound, this.headless);
 
         // Initialize a SimpleRenderer with boundaries and the flock
-        this.simpleRenderer = new SimpleRenderer(this.bound, this.flock);
-        this.simpleRenderer.init(); 
-
+        if (!this.headless){
+            this.simpleRenderer = new SimpleRenderer(this.bound, this.flock);
+            this.simpleRenderer.init(); 
+        }
         // Create a flockHelper object with the flock and boundaries
         this.flockHelper = new flockHelper(this.flock, this.bound);
         this.flockHelper.addBoids(this.numBoids); // Add boids to the flock
@@ -44,7 +45,10 @@ class Application {
         window.requestAnimationFrame(this.render.bind(this), 1000/30); // Call at 30 FPS
 
         this.flock.iterate(); // Update flock behavior and state
-        this.simpleRenderer.render(); // Render the updated state of the simulation
+  
+        if (!this.headless) {
+            this.simpleRenderer.render(); // Render the updated state of the simulation 
+        }   
     }
 
 }
