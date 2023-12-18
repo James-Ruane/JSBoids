@@ -2,24 +2,33 @@ import Boid from './Boid.js';
 import Windmill from './windmill.js';
 
 export default class flockHelper{
+    /**
+     * Represents the flockHelper class.
+     * @param {Array} flock - The flock array containing boids of this species.
+     * @param {Object} bound - The bound object containing the x,y,z dimensions of the simulation area
+     */
     constructor(flock, bound){
         this.flock = flock;
         this.bound = bound;
         this.spawnArea = new THREE.Vector3(this.bound.x, this.bound.y, this.bound.z - 100); 
     }
 
-    init(numBoids){
-        for (var i=0; i<numBoids; i++){
-            this.flock.push(new Boid());
-        }
-    }
-
+    /**
+     * Generates a random number between a given min and max value
+     * @param {number} max - The maximum value
+     * @param {number} min - The minimum value
+     * @returns {number} - random number between min and max
+     */
     random(min, max){
         const difference = max - min
         const random = Math.round(difference * Math.random())
         return random + min
     }
     
+    /**
+     * Pushes a given number of boids to the flock
+     * @param {number} count - The number of boids to add to the flock. (default = 2)
+     */
     addBoids(count=2) {
         for(let i=0; i<count; i++) {
             const x = Math.ceil(Math.random() * this.bound.x) - 5;
@@ -30,9 +39,10 @@ export default class flockHelper{
         }
     }
 
-    // TODO add more windmills 
-    // TODO add more blades to windmills
-    addWindmill() {
+    /**
+     * Pushes a windmill to the windmill array
+     */
+    addWindmill() {  // TODO add more windmills add more blades
         const x = 62.5;
         const y = 37.5;
         const z = 100;     

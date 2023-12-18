@@ -1,0 +1,68 @@
+// ---------------------------------------------- OBSOLETE CODE ----------------------------------------------
+
+
+
+// Within Flock.js
+
+
+// Windmill now spins about a point, no need to reset it position
+
+windmillEdge(windmills){
+    for (var i=0; i<windmills.length; i++){
+        const windmill = windmills[i];
+        if (windmill.position.y < 0){
+            windmill.position.y += this.bound.y;
+        }
+    }        
+}
+
+
+
+// Using periodic boundary conditions, no need to avoid the edges anymore.
+
+
+let boundAsObj = this.boundAsObj(boid);
+acceleration = acceleration.add(boundAsObj.multiplyScalar(this.avoidWeight));
+
+boundAsObj(boid){
+    let avoid = new THREE.Vector3(0,0,0);
+
+    const radius = 5;
+    const distX = this.bound.x - boid.position.x;
+    const distY = this.bound.y - boid.position.y;
+    const distZ = this.bound.z - boid.position.z;
+
+    if(boid.position.x < radius && Math.abs(boid.position.x) > 0) {
+        avoid.x += 1/boid.position.x;
+    } else if(distX < radius && distX > 0) {
+        avoid.x -= 1/distX;
+    }
+    if(boid.position.y < radius && Math.abs(boid.position.y) > 0) {
+        avoid.y += 1/boid.position.y;
+    } else if(distY < radius && distY > 0) {
+        avoid.y -= 1/distY;
+    }
+    if(boid.position.z < radius && Math.abs(boid.position.z) > 0) {
+        avoid.z += 1/boid.position.z;
+    } else if(distZ < radius && distZ > 0) {
+        avoid.z -= 1/distZ;
+    }
+
+    return avoid;
+}
+
+
+// from Render
+
+// apply asymptotic smoothing - prevents bouncing - no longer needed made periodic boundary look bad
+
+boid.mesh.position.x = 0.9*boid.mesh.position.x + 0.1*boid.position.x;
+boid.mesh.position.y = 0.9*boid.mesh.position.y + 0.1*boid.position.y;
+boid.mesh.position.z = 0.9*boid.mesh.position.z + 0.1*boid.position.z;
+boid.localVelocity.x = 0.9*boid.localVelocity.x + 0.1*boid.velocity.x;
+boid.localVelocity.y = 0.9*boid.localVelocity.y + 0.1*boid.velocity.y;
+boid.localVelocity.z = 0.9*boid.localVelocity.z + 0.1*boid.velocity.z;
+
+boid.mesh.lookAt(boid.mesh.position.x + boid.localVelocity.x,
+            boid.mesh.position.y + boid.localVelocity.y,
+            boid.mesh.position.z + boid.localVelocity.z);

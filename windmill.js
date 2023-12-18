@@ -1,5 +1,15 @@
 export default class Windmill{
-    constructor(x,y,z, d, h, w, bound){
+
+    /**
+     * Represents a windmill object.
+     * @param {number} x - The windmills x coordinate
+     * @param {number} y - The windmills y coordinate
+     * @param {number} z - The windmills z coordinate
+     * @param {number} d - The windmills depth
+     * @param {number} h - The windmills height
+     * @param {number} w - The windmills width
+     */
+    constructor(x,y,z, d, h, w){
         //depth, width, height of windmill
         this.depth = d;
         this.height = h;
@@ -33,7 +43,9 @@ export default class Windmill{
         this.rotation = 1.5;
     }
 
-    // updates the windmills corners and rotates the blades 
+    /**
+     * Updates the windmills position each frame, rotation around a point
+     */
     update(){
         const x = this.x;
         const y = this.y;
@@ -54,7 +66,10 @@ export default class Windmill{
         this.rotation = this.rotation % (2 * Math.PI);
     }
 
-    // creates a list of points that are contained within the windmills trajerctory
+    /**
+     * Creates a list of points that are contained within the windmills trajectory
+     * @returns {Array} - array of points contained within the windmills trajectory
+     */
     getPoints(){
         const radius = this.depth / 2;
         const TRX = (radius * Math.sin(Math.PI / 2)+this.x);
@@ -75,7 +90,12 @@ export default class Windmill{
         return points;
     }
 
-    // generates a random number between a given min and max value
+    /**
+     * Generates a random number between a given min and max value
+     * @param {number} max - The maximum value
+     * @param {number} min - The minimum value
+     * @returns {number} - random number between min and max
+     */
     random(min, max){
         const difference = max - min;
         const random = Math.round(difference * Math.random());
