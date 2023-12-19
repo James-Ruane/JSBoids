@@ -11,7 +11,7 @@ class Application {
         this.simpleRenderer = undefined;
         this.boids = undefined;
         this.flock = undefined;
-        this.numBoids = 400; 
+        this.numBoids = 300; 
         this.bound = new THREE.Vector3(125, 75, 375);  
         this.headless = false;
     }
