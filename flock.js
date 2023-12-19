@@ -4,18 +4,23 @@ export default class Flock{
      * Represents a flock object.
      * @param {Object} bound - The bound object containing x, y, z dimensions of the simulation area.
      */
-    constructor(bound){
+    constructor(bound, headless){
         this.bound = bound; // Boundaries object containing x, y, z dimensions
         this.flock = []; // Array to hold boid objects
         this.windmills = []; // Array to hold windmill objects
-        this.allignWeight = 1; // Weight for alignment behavior
-        this.cohesionWeight = 0.02; // Weight for cohesion behavior
+        this.allignWeight = 2; // Weight for alignment behavior
+        this.cohesionWeight = 0.1; // Weight for cohesion behavior
         this.separationWeight = 0.2; // Weight for separation behavior
-        this.avoidWeight = 0.5; // Weight for avoidance behavior
-        this.endWeight = 0.0005; // Weight for end behavior
-        this.endPoint = new THREE.Vector3(62.5, 32.5, 0); // End point for end behavior calculations
-    }
+        this.avoidWeight = 1; // Weight for avoidance behavior
+        this.endWeight = 0.0015; // Weight for end behavior
+        this.endPoint = new THREE.Vector3(62.5, 37.5, 0); // End point for end behavior calculations
+        
+        this.headless = headless;
+        this.collisionNum = 0;
 
+        this.gridDictionary = {};
+        this.gridSize = 5; // the larger this is the larger the grid boxes are i.e. more boids will be factored in 
+    }
 
     /**
      * Adds a boid to the flock.
@@ -55,6 +60,7 @@ export default class Flock{
     * moving the boids and checking for collisions. Also moves each of the windmills
     */
     iterate(){
+        this.gridDictionary = this.createGridDictionary(this.flock);
         for(var i=0;i<this.flock.length;i++){
             const boid = this.flock[i];
             if (!boid.dead) {
@@ -115,18 +121,16 @@ export default class Flock{
     allign(boid){
         let avgA = new THREE.Vector3(0,0,0);
         let total = 0;
-
-        this.flock.forEach(i => {
-            var periodicBoids = this.getAllPos(i);
-            periodicBoids.forEach(pos => {
-                if (boid != i && 
-                    boid.position.distanceTo(pos) < boid.vision && this.inFOV(boid, pos.x, pos.y, pos.z) && !(boid.position == pos)) {
-                    total ++;
-                    avgA.x += i.velocity.x;
-                    avgA.y += i.velocity.y;
-                    avgA.z += i.velocity.z;
-                }
-            });
+        const gridKey = this.generateGridKey(boid);
+        const boidsNear = this.gridDictionary[gridKey] || []   
+        boidsNear.forEach(i => {
+            if (boid != i && 
+                boid.position.distanceTo(i.position) < boid.vision && boid.inFOV(i.position.x, i.position.y, i.position.z) && !(boid.position == i.position)) {
+                total ++;
+                avgA.x += i.velocity.x;
+                avgA.y += i.velocity.y;
+                avgA.z += i.velocity.z;
+            }
         });
 
         if (total > 0){
@@ -145,17 +149,16 @@ export default class Flock{
     cohes(boid){
         let avgC = new THREE.Vector3(0,0,0);
         let total = 0;
-        this.flock.forEach(i => {
-            var periodicBoids = this.getAllPos(i);
-            periodicBoids.forEach(pos => {
-                if (boid != i && 
-                    boid.position.distanceTo(pos) < boid.vision && this.inFOV(boid, pos.x, pos.y, pos.z) && !(boid.position == pos)){
-                    total ++;
-                    avgC.x += pos.x;
-                    avgC.y += pos.y;
-                    avgC.z += pos.z;
-                }
-            });
+        const gridKey = this.generateGridKey(boid);
+        const boidsNear = this.gridDictionary[gridKey] || []
+        boidsNear.forEach(i => {
+            if (boid != i && 
+                boid.position.distanceTo(i.position) < boid.vision && boid.inFOV(i.position.x, i.position.y, i.position.z) && !(boid.position == i.position)){
+                total ++;
+                avgC.x += i.position.x;
+                avgC.y += i.position.y;
+                avgC.z += i.position.z;
+            }
         });
 
         if (total > 0){
@@ -174,24 +177,24 @@ export default class Flock{
     */
     sep(boid){
         let avgS = new THREE.Vector3(0,0,0);
-        this.flock.forEach(i => {
-            var periodicBoids = this.getAllPos(i);
-            periodicBoids.forEach(pos => {
-                let dist = boid.position.distanceTo(pos);
-                if (dist <= 0){
-                    dist = 0.01;
-                } 
-                if (boid != i && dist < boid.vision && this.inFOV(boid, pos.x, pos.y, pos.z)  && !(boid.position == pos)) {
-                    
-                    let sx = boid.position.x - pos.x;
-                    let sy = boid.position.y - pos.y;
-                    let sz = boid.position.z - pos.z;
+        const {gridKey, maxArr} = this.generateGridKey(boid);
 
-                    avgS.x += (sx / dist) / dist;
-                    avgS.y += (sy / dist) / dist;
-                    avgS.z += (sz / dist) / dist;
-                }
-            });
+        const boidsNear = this.gridDictionary[gridKey] || []
+        boidsNear.forEach(i => {
+            let dist = boid.position.distanceTo(i.position);
+            if (dist <= 0){
+                dist = 0.01;
+            } 
+            if (boid != i && dist < boid.vision && boid.inFOV(i.position.x, i.position.y, i.position.z)  && !(boid.position == i.position)) {
+                
+                let sx = boid.position.x - i.position.x;
+                let sy = boid.position.y - i.position.y;
+                let sz = boid.position.z - i.position.z;
+
+                avgS.x += (sx / dist) / dist;
+                avgS.y += (sy / dist) / dist;
+                avgS.z += (sz / dist) / dist;
+            }
         });
         return avgS;
 
@@ -208,7 +211,7 @@ export default class Flock{
         for(var i=0; i<this.windmills.length; i++){
             for (var j=0; j<this.windmills[i].points.length; j++){
                 const point = this.windmills[i].points[j];
-                if (this.windmillPointInFOV(boid, this.windmills[i], point)){
+                if (boid.windmillPointInFOV(this.windmills[i], point)){
                     pointsInFOV.push(point);
                 }
             }
@@ -227,53 +230,25 @@ export default class Flock{
     */
     collision(boid){
         this.windmills.forEach(mill => {
-            const mX = boid.mesh.position.x;
-            const mY = boid.mesh.position.y;
-            const mZ = boid.mesh.position.z;
-            if (this.pointInWindmill(mill, mX, mY, mZ)){
+            let mX = 0;
+            let mY = 0;
+            let mZ = 0;
+            if (this.headless){
+                mX = boid.position.x;
+                mY = boid.position.y;
+                mZ = boid.position.z;
+            }else{
+                mX = boid.mesh.position.x;
+                mY = boid.mesh.position.y;
+                mZ = boid.mesh.position.z;
+            }
+            if (mill.pointInWindmill(mX, mY, mZ)){
                 boid.dead=true;
+                this.collisionNum++;
             }
         });
     }
     
-    /**
-    * Checks if a given point is within the field of view (FOV) of the boid.
-    * @param {Object} boid - The boid whose field of view is checked.
-    * @param {number} x - The x-coordinate of the point.
-    * @param {number} y - The y-coordinate of the point.
-    * @param {number} z - The z-coordinate of the point.
-    * @returns {boolean} - Indicates whether the point is within the FOV.
-    */  
-    inFOV(boid, x, y, z){
-        const bx = boid.position.x;
-        const by = boid.position.y;
-        const bz = boid.position.z;
-        if(((x - bx)**2 + (y - by)**2 + ((z - bz)**2)) < boid.vision*125){
-            if (x - y > 0 && x + y > 0){
-                return true;
-            }
-        }
-    }
-
-    /**
-    * Checks if a given point is within the field of view (FOV) of the boid and the windmills current area.
-    * @param {Object} boid - The boid whose field of view is checked.
-    * @param {Object} mill - The windmill object.
-    * @param {Array} point - The points coordinates [x, y, z] to be checked.
-    * @returns {boolean} - Indicates whether the point is within the FOV and inside the windmills current area
-    */  
-    windmillPointInFOV(boid, mill, point){    // TODO should test this properly, feels right tho
-        const x = point[0];
-        const y = point[1];
-        const z = point[2]; 
-        if (this.pointInWindmill(mill, x, y, z)) {
-            if(this.inFOV(boid, x, y, z)){
-                return true;     
-            }
-        }
-        return false;
-    }
-      
     /**
      * Applies periodic boundary conditions to keep the boid within the specified bounds.
      * @param {Object} boid - The boid to which periodic boundary conditions are applied.
@@ -290,36 +265,6 @@ export default class Flock{
             }
         });
     }
-
-    /**
-    * Checks if a given point is within the boundaries of a windmill.
-    * @param {Object} mill - The windmill object.
-    * @param {number} x - The x-coordinate of the point.
-    * @param {number} y - The y-coordinate of the point.
-    * @param {number} z - The z-coordinate of the point.
-    * @returns {boolean} - Indicates whether the point is within the windmill's boundaries.
-    */
-    pointInWindmill(mill, x, y, z){
-        const minZ = mill.position.z - mill.width / 2;
-        const maxZ = mill.position.z + mill.width / 2;
-        const line1 = {
-            a: (mill.TLY - mill.TRY) / (mill.TLX - mill.TRX),
-            b: mill.TRY - ((mill.TLY - mill.TRY) / (mill.TLX - mill.TRX)) * mill.TRX
-        };
-        const line2 = {
-            a: (mill.BRY - mill.BLY) / (mill.BRX - mill.BLX),
-            b: mill.BLY - ((mill.BRY - mill.BLY) / (mill.BRX - mill.BLX)) * mill.BLX
-        };
-        const isInBetweenLines = (
-            (y < ((line1.a * x) + line1.b) && 
-            y > ((line2.a * x) + line2.b)) ||
-            (y > ((line1.a * x) + line1.b) && 
-            y < ((line2.a * x) + line2.b))
-        );
-        if (isInBetweenLines && z > minZ && z < maxZ) {
-            return true;
-        }
-    }   
 
     /**
     * Retrieves all positions of a boid and its shifted positions based on defined shifts.
@@ -346,5 +291,45 @@ export default class Flock{
         shiftedFlocks.push(shiftedPos);
     });
     return shiftedFlocks;
+    }
+
+    /**
+    * Creates a dictionary mapping each boid to a 20x20x20 box within the simulation area
+    * @param {Object} flock - The flock of boids.
+    * @returns {Array} - A dictionary where each key is a grid coord and each value is a list of boids within that coord.
+    */
+    createGridDictionary(flock){
+        const grid = {};
+
+        flock.forEach(boid => {
+            const gridKey = this.generateGridKey(boid);
+
+            if (!grid[gridKey]) {
+                grid[gridKey] = [];
+            }
+            grid[gridKey].push(boid)
+        });
+        return grid;
+    }
+
+    /**
+    * Creates the key used to reference the grid position that a boid is in
+    * @param {Object} boid - The boids.
+    * @returns {string} - A dictionary key referencing the grid coord of the boid.
+    */
+    generateGridKey(boid){
+        const gridSize = this.gridSize;
+        const gridX = Math.floor((boid.position.x / boid.vision) / gridSize);
+        const gridY = Math.floor((boid.position.y / boid.vision) / gridSize);
+        const gridZ = Math.floor((boid.position.z / boid.vision) / gridSize);
+
+        const maxX = Math.floor((this.bound.x / boid.vision) / gridSize);
+        const maxY = Math.floor((this.bound.y / boid.vision) / gridSize);
+        const maxZ = Math.floor((this.bound.z / boid.vision) / gridSize);  
+
+        return {
+            gridKey : `${gridX}_${gridY}_${gridZ}`, 
+            maxArr: [(gridX == maxX || gridX == 0),(gridY == maxY || gridY == 0), (gridZ == maxZ || gridZ == 0)]
+        };
     }
 }
