@@ -22,7 +22,6 @@ export default class Flock{
         this.gridSize = 5; // the larger this is the larger the grid boxes are i.e. more boids will be factored in 
     }
 
-
     /**
      * Adds a boid to the flock.
      * @param {Object} boid - The boid object to be added to the flock.
@@ -126,7 +125,7 @@ export default class Flock{
         const boidsNear = this.gridDictionary[gridKey] || []   
         boidsNear.forEach(i => {
             if (boid != i && 
-                boid.position.distanceTo(i.position) < boid.vision && this.inFOV(boid, i.position.x, i.position.y, i.position.z) && !(boid.position == i.position)) {
+                boid.position.distanceTo(i.position) < boid.vision && boid.inFOV(i.position.x, i.position.y, i.position.z) && !(boid.position == i.position)) {
                 total ++;
                 avgA.x += i.velocity.x;
                 avgA.y += i.velocity.y;
@@ -154,7 +153,7 @@ export default class Flock{
         const boidsNear = this.gridDictionary[gridKey] || []
         boidsNear.forEach(i => {
             if (boid != i && 
-                boid.position.distanceTo(i.position) < boid.vision && this.inFOV(boid, i.position.x, i.position.y, i.position.z) && !(boid.position == i.position)){
+                boid.position.distanceTo(i.position) < boid.vision && boid.inFOV(i.position.x, i.position.y, i.position.z) && !(boid.position == i.position)){
                 total ++;
                 avgC.x += i.position.x;
                 avgC.y += i.position.y;
@@ -186,7 +185,7 @@ export default class Flock{
             if (dist <= 0){
                 dist = 0.01;
             } 
-            if (boid != i && dist < boid.vision && this.inFOV(boid, i.position.x, i.position.y, i.position.z)  && !(boid.position == i.position)) {
+            if (boid != i && dist < boid.vision && boid.inFOV(i.position.x, i.position.y, i.position.z)  && !(boid.position == i.position)) {
                 
                 let sx = boid.position.x - i.position.x;
                 let sy = boid.position.y - i.position.y;
@@ -212,7 +211,7 @@ export default class Flock{
         for(var i=0; i<this.windmills.length; i++){
             for (var j=0; j<this.windmills[i].points.length; j++){
                 const point = this.windmills[i].points[j];
-                if (this.windmillPointInFOV(boid, this.windmills[i], point)){
+                if (boid.windmillPointInFOV(this.windmills[i], point)){
                     pointsInFOV.push(point);
                 }
             }
@@ -243,62 +242,13 @@ export default class Flock{
                 mY = boid.mesh.position.y;
                 mZ = boid.mesh.position.z;
             }
-            if (this.pointInWindmill(mill, mX, mY, mZ)){
+            if (mill.pointInWindmill(mX, mY, mZ)){
                 boid.dead=true;
                 this.collisionNum++;
             }
         });
     }
     
-    /**
-    * Checks if a given point is within the field of view (FOV) of the boid.
-    * @param {Object} boid - The boid whose field of view is checked.
-    * @param {number} x - The x-coordinate of the point.
-    * @param {number} y - The y-coordinate of the point.
-    * @param {number} z - The z-coordinate of the point.
-    * @returns {boolean} - Indicates whether the point is within the FOV.
-    */  
-    inFOV(boid, x, y, z){
-        const b = boid.fov;
-        const bx = boid.position.x;
-        const by = boid.position.y;
-        const bz = boid.position.z;
-        x -= bx;
-        y -= by;
-        z -= bz;
-
-        if(((x)**2 + (y)**2 + ((z)**2)) < boid.vision**2){
-            if (b < 0){
-                if (x - (b*y) > 0 || x + (b*y) > 0){
-                    return true;
-                }
-            } else if (b > 0){
-                if (x - (b*y) > 0 && x + (b*y) > 0){
-                    return true;
-                }
-            }
-        }
-    }
-
-    /**
-    * Checks if a given point is within the field of view (FOV) of the boid and the windmills current area.
-    * @param {Object} boid - The boid whose field of view is checked.
-    * @param {Object} mill - The windmill object.
-    * @param {Array} point - The points coordinates [x, y, z] to be checked.
-    * @returns {boolean} - Indicates whether the point is within the FOV and inside the windmills current area
-    */  
-    windmillPointInFOV(boid, mill, point){    // TODO should test this properly, feels right tho
-        const x = point[0];
-        const y = point[1];
-        const z = point[2]; 
-        if (this.pointInWindmill(mill, x, y, z)) {
-            if(this.inFOV(boid, x, y, z)){
-                return true;     
-            }
-        }
-        return false;
-    }
-      
     /**
      * Applies periodic boundary conditions to keep the boid within the specified bounds.
      * @param {Object} boid - The boid to which periodic boundary conditions are applied.
@@ -315,37 +265,6 @@ export default class Flock{
             }
         });
     }
-
-    /**
-    * Checks if a given point is within the boundaries of a windmill.
-    * @param {Object} mill - The windmill object.
-    * @param {number} x - The x-coordinate of the point.
-    * @param {number} y - The y-coordinate of the point.
-    * @param {number} z - The z-coordinate of the point.
-    * @returns {boolean} - Indicates whether the point is within the windmill's boundaries.
-    */
-    pointInWindmill(mill, x, y, z){
-        const minZ = mill.position.z - mill.width / 2;
-        const maxZ = mill.position.z + mill.width / 2;
-        const line1 = {
-            a: (mill.TLY - mill.TRY) / (mill.TLX - mill.TRX),
-            b: mill.TRY - ((mill.TLY - mill.TRY) / (mill.TLX - mill.TRX)) * mill.TRX
-        };
-        const line2 = {
-            a: (mill.BRY - mill.BLY) / (mill.BRX - mill.BLX),
-            b: mill.BLY - ((mill.BRY - mill.BLY) / (mill.BRX - mill.BLX)) * mill.BLX
-        };
-        const isInBetweenLines = (
-            (y < ((line1.a * x) + line1.b) && 
-            y > ((line2.a * x) + line2.b)) ||
-            (y > ((line1.a * x) + line1.b) && 
-            y < ((line2.a * x) + line2.b))
-        );
-        if (isInBetweenLines && z > minZ && z < maxZ) {
-            return true;
-        }
-        return false;
-    }   
 
     /**
     * Retrieves all positions of a boid and its shifted positions based on defined shifts.
