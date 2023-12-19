@@ -22,7 +22,7 @@ export default class Boid{
         this.vision = 20; // Vision range of the boid
         this.maxSpeed = 0.3; // Maximum speed the boid can achieve
         this.maxForce = 0.05; // Maximum steering force applied to the boid
-        this.fov = -100; // FOV of the boid //TODO convert this to an angle would be nice
+        this.fov = Math.PI / 2; // FOV of the boid in radians between -pi/2 and pi/2
         
     }
 
@@ -56,16 +56,21 @@ export default class Boid{
         z -= bz;
 
         if(((x)**2 + (y)**2 + ((z)**2)) < this.vision**2){
-            if (b < 0){
-                if (x - (b*y) > 0 || x + (b*y) > 0){
+            if (b > 0){
+                if ((y < -(z / Math.tan(b))) || (y > (z / Math.tan(b))) && (x < -(z / Math.tan(b))) || (x > (z / Math.tan(b)))){
                     return true;
                 }
-            } else if (b > 0){
-                if (x - (b*y) > 0 && x + (b*y) > 0){
+            } else if (b < 0){
+                if ((y > -(z / Math.tan(b))) && (y < (z / Math.tan(b))) && (x > -(z / Math.tan(b))) && (x < (z / Math.tan(b)))){
+                    return true;
+                }
+            } else if (b == 0){
+                if (z < 0 && y < 0){
                     return true;
                 }
             }
         }
+        return false;
     }
 
     /**
@@ -79,7 +84,7 @@ export default class Boid{
             const y = point[1];
             const z = point[2]; 
             if (mill.pointInWindmill(x, y, z)) {
-                if(this.inFOV(x, y, z)){
+                if(this.inFOV(x, y, z)){;
                     return true;     
                 }
             }
