@@ -84,7 +84,7 @@ export default class Boid{
             const y = point[1];
             const z = point[2]; 
             if (mill.pointInWindmill(x, y, z)) {
-                if(this.inFOV(x, y, z)){;
+                if(this.inFOV(x, y, z)){
                     return true;     
                 }
             }
