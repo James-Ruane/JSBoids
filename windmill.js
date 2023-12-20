@@ -97,28 +97,28 @@ export default class Windmill{
     * @param {number} z - The z-coordinate of the point.
     * @returns {boolean} - Indicates whether the point is within the windmill's boundaries.
     */
-        pointInWindmill(x, y, z){
-            const minZ = this.position.z - this.width / 2;
-            const maxZ = this.position.z + this.width / 2;
-            const line1 = {
-                a: (this.TLY - this.TRY) / (this.TLX - this.TRX),
-                b: this.TRY - ((this.TLY - this.TRY) / (this.TLX - this.TRX)) * this.TRX
-            };
-            const line2 = {
-                a: (this.BRY - this.BLY) / (this.BRX - this.BLX),
-                b: this.BLY - ((this.BRY - this.BLY) / (this.BRX - this.BLX)) * this.BLX
-            };
-            const isInBetweenLines = (
-                (y < ((line1.a * x) + line1.b) && 
-                y > ((line2.a * x) + line2.b)) ||
-                (y > ((line1.a * x) + line1.b) && 
-                y < ((line2.a * x) + line2.b))
-            );
-            if (isInBetweenLines && z > minZ && z < maxZ) {
-                return true;
-            }
-            return false;
-        }   
+    pointInWindmill(x, y, z){
+        const minZ = this.position.z - this.width / 2;
+        const maxZ = this.position.z + this.width / 2;
+        const line1 = {
+            a: (this.TLY - this.TRY) / (this.TLX - this.TRX),
+            b: this.TRY - ((this.TLY - this.TRY) / (this.TLX - this.TRX)) * this.TRX
+        };
+        const line2 = {
+            a: (this.BRY - this.BLY) / (this.BRX - this.BLX),
+            b: this.BLY - ((this.BRY - this.BLY) / (this.BRX - this.BLX)) * this.BLX
+        };
+        const isInBetweenLines = (
+            (y < ((line1.a * x) + line1.b) && 
+            y > ((line2.a * x) + line2.b)) ||
+            (y > ((line1.a * x) + line1.b) && 
+            y < ((line2.a * x) + line2.b))
+        );
+        if (isInBetweenLines && z > minZ && z < maxZ) {
+            return true;
+        }
+        return false;
+    }   
     
 
     /**

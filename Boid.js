@@ -19,17 +19,23 @@ export default class Boid{
         // The boids state (Dead / Alive)      
         this.dead = false;        
         // Boids characteristics 
-        this.vision = 20; // Vision range of the boid
-        this.maxSpeed = 0.3; // Maximum speed the boid can achieve
-        this.maxForce = 0.05; // Maximum steering force applied to the boid
-        this.fov = Math.PI / 2; // FOV of the boid in radians between -pi/2 and pi/2
+        this.visions = [5, 25, 45, 65, 85, 105, 125, 145, 165, 185, 205];
+        this.vision = this.visions[0]; // Vision range of the boid
+        
+        this.maxSpeeds = [0.2, 0.3, 0.4, 0.5, 0.6];
+        this.maxSpeed = this.maxSpeeds[0]; // Maximum speed the boid can achieve
+
+        this.fovs = [-(Math.PI / 2), -(5 * Math.PI / 12), -(Math.PI / 3), -(Math.PI / 4), -(Math.PI / 6), -(Math.PI / 12), 0, // 0,  30, 60 ,90 , 120, 150, 180
+                    (Math.PI / 12), (Math.PI / 6), (Math.PI / 4), (Math.PI / 3), (5 * Math.PI / 12), (Math.PI / 2)]; // 210, 240, 270, 300, 330, 360
+        
+        this.fov = this.fovs[0]; // FOV of the boid in radians between -pi/2 and pi/2
         
     }
 
     /**
      * Updates the boids position, velocity and acceleration ensuring it does not exceed maxSpeed
      */
-    update(){
+    update(){ //TODO: add another parameter so that FOV can be big in one plane but small in another - replace one of the b's
         this.position = this.position.add(this.velocity);
         this.velocity = this.velocity.add(this.acceleration);
         // Calculate the magnitude (length) of the velocity vector
@@ -79,17 +85,17 @@ export default class Boid{
     * @param {Array} point - The points coordinates [x, y, z] to be checked.
     * @returns {boolean} - Indicates whether the point is within the FOV and inside the windmills current area
     */  
-        windmillPointInFOV(mill, point){    // TODO should test this properly, feels right tho
-            const x = point[0];
-            const y = point[1];
-            const z = point[2]; 
-            if (mill.pointInWindmill(x, y, z)) {
-                if(this.inFOV(x, y, z)){
-                    return true;     
-                }
+    windmillPointInFOV(mill, point){    // TODO should test this properly, feels right tho
+        const x = point[0];
+        const y = point[1];
+        const z = point[2]; 
+        if (mill.pointInWindmill(x, y, z)) {
+            if(this.inFOV(x, y, z)){
+                return true;     
             }
-            return false;
         }
+        return false;
+    }
           
     /**
      * Generates a random number between a given min and max value
@@ -101,6 +107,44 @@ export default class Boid{
         const difference = max - min
         const random = Math.round(difference * Math.random())
         return random + min
+    }
+
+    /**
+     * @param {number} fovCounter - tracks which fov is being used currently
+     * updates fov 
+     */
+    updateFOV(fovCounter){
+        this.fov = this.fovs[fovCounter];  
+    }
+
+    /**
+     * @param {number} maSpeedCounter - tracks which maxSpeed is being used currently
+     * updates maxSpeed 
+     */
+    updateMaxSpeed(maxSpeedCounter){
+        this.maxSpeed = this.maxSpeeds[maxSpeedCounter];
+    }
+
+    /**
+     * @param {number} visionCounter - tracks which vision range is being used currently
+     * updates vision
+     */
+    updateVisionRange(visionCounter){
+        this.vision = this.visions[visionCounter];
+    }
+
+    /**
+     * @param {object} bound - The bound object containing x, y, z dimensions of the simulation area.
+     * resets boids position, velocity and acceleration
+     */
+    resetPositions(bound){
+        const spawn = new THREE.Vector3(bound.x, bound.y, bound.z - 100);
+        const x = Math.ceil(Math.random() * bound.x) - 5;
+        const y = Math.ceil(Math.random() * bound.y) - 5;
+        const z = Math.ceil(this.random(spawn.z, bound.z)) - 5;            
+        this.position.set(x,y,z);
+        this.velocity.set(this.random(-2,2), this.random(-2,2), this.random(-2,0));
+        this.acceleration.set(this.random(-2, 2), this.random(-2,2), this.random(-2,0));
     }
 }
 

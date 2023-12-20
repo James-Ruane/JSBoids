@@ -38,19 +38,27 @@ class Application {
     }
 
     /**
-     * Initiates the rendering loop for the simulation and gathers data for analysis.
+     * Initiates the rendering loop for the simulation and gathers data for analysis and resets simulation
      */
     render() {  // TODO: Gather data for analysis
         // Initiates the rendering loop by calling 'render' method using requestAnimationFrame
         window.requestAnimationFrame(this.render.bind(this), 1000/30); // Call at 30 FPS
+        if (this.flock.collisionNum + this.flock.passedMillNum < this.numBoids * 0.9){ //TODO: update this condition
+            this.flock.iterate(); // Update flock behavior and state
+            if (!this.headless) {
+                this.simpleRenderer.render(); // Render the updated state of the simulation 
+            }
+        }else{
+            this.flock.reset() // Reset flock behavior and state 
+        }
 
-        this.flock.iterate(); // Update flock behavior and state
-  
-        if (!this.headless) {
-            this.simpleRenderer.render(); // Render the updated state of the simulation 
-        }   
+        // TODO: some form of boid reset i.e. based off both number of collisions and number of boids making it to the end
+        // If collision + boids who reached end > theshold -> output stats, update parameters and reurn  
     }
 
 }
 
-document.addEventListener('DOMContentLoaded', (new Application()).init());
+document.addEventListener('DOMContentLoaded', () => {
+    const app = new Application();
+    app.init();
+});

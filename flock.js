@@ -17,9 +17,19 @@ export default class Flock{
         
         this.headless = headless;
         this.collisionNum = 0;
+        this.passedMillNum = 0;
 
         this.gridDictionary = {};
         this.gridSize = 5; // the larger this is the larger the grid boxes are i.e. more boids will be factored in 
+
+        this.fovCounter = 0;
+        this.maxSpeedCounter = 0;
+        this.visionCounter = 0;
+
+        this.collisionPos = [];
+        this.polarisation = 0;
+        this.polarTotal = 0;
+
     }
 
     /**
@@ -61,15 +71,32 @@ export default class Flock{
     */
     iterate(){
         this.gridDictionary = this.createGridDictionary(this.flock);
+        this.passedMillNum = 0;
+        var total = 0; 
+        var avgVelocity = new THREE.Vector3(0,0,0);
         for(var i=0;i<this.flock.length;i++){
             const boid = this.flock[i];
             if (!boid.dead) {
                 this.periodicBoundary(boid);
                 this.flocking(boid);
+                if (!isNaN(boid.velocity.x) && !isNaN(boid.velocity.y) && !isNaN(boid.velocity.z)) {
+                    avgVelocity.x += boid.velocity.x / boid.velocity.length();
+                    avgVelocity.y += boid.velocity.y / boid.velocity.length();
+                    avgVelocity.z += boid.velocity.z / boid.velocity.length();
+                    total++;
+                }
                 boid.update();
                 this.collision(boid);
+                if (this.passedMill(boid)){this.passedMillNum++;};
             }
+
         }
+        avgVelocity.divideScalar(total);
+        if ((!isNaN(avgVelocity.x)) && (!isNaN(avgVelocity.x)) && (!isNaN(avgVelocity.x))){
+            this.polarisation += avgVelocity.length();
+            this.polarTotal++;
+        }
+
         for (var i=0; i<this.windmills.length; i++){
             const windmill = this.windmills[i];
             windmill.update();
@@ -244,9 +271,25 @@ export default class Flock{
             }
             if (mill.pointInWindmill(mX, mY, mZ)){
                 boid.dead=true;
+                this.collisionPos.push([mX, mY, mZ]);
                 this.collisionNum++;
             }
         });
+    }
+
+    /**
+    * Checks to see if a boid has passed the windmill
+    * @param {object} boid - The boid to check for a collision
+    * @returns {boolean} - indicates if the boid has passed the windmill
+    */
+    passedMill(boid){
+        var passed = true;
+        this.windmills.forEach(mill => {
+            if (boid.position.z > mill.minZ){
+                passed = false;
+            }
+        });
+        return passed;
     }
     
     /**
@@ -331,5 +374,45 @@ export default class Flock{
             gridKey : `${gridX}_${gridY}_${gridZ}`, 
             maxArr: [(gridX == maxX || gridX == 0),(gridY == maxY || gridY == 0), (gridZ == maxZ || gridZ == 0)]
         };
+    }
+
+
+    /**
+     * Resets the simulation and cycles through variations on the boid parameters
+     */
+    reset(){
+        console.log("config for run");
+        const boid = this.flock[0];
+        console.log("FOV: ", Math.round((360 * (boid.fov + (Math.PI / 2))) / Math.PI));
+        console.log("Max Speed: ", boid.maxSpeed);
+        console.log("Max Vision: ", boid.vision);
+        console.log("Collision Positions ", this.collisionPos);
+        console.log("Average Polarisation: ", this.polarisation / this.polarTotal)
+
+
+        this.fovCounter++;
+        if (this.maxSpeedCounter == boid.maxSpeeds.lenght) {this.visionCounter++; this.maxSpeedCounter = 0; this.fovCounter = 0;}
+        if  (this.fovCounter == boid.fovs.length) {this.maxSpeedCounter++; this.fovCounter = 0;}
+        
+        for(var i=0;i<this.flock.length;i++){
+            const boid = this.flock[i]; 
+            
+            if (boid.dead){
+                boid.dead = true;
+            }
+            boid.resetPositions(this.bound);
+            this.collisionNum = 0;
+
+            boid.updateFOV(this.fovCounter);
+            
+            if (this.fovCounter == 0){
+                boid.updateMaxSpeed(this.maxSpeedCounter);
+            }
+            
+            if (this.maxSpeedCounter == 0){
+                boid.updateVisionRange(this.visionCounter);
+            }
+        }
+        console.log("resetting flock and updating parmeters...");
     }
 }
