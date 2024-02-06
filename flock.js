@@ -9,10 +9,10 @@ export default class Flock{
         this.flock = []; // Array to hold boid objects
         this.windmills = []; // Array to hold windmill objects
         this.allignWeight = 2; // Weight for alignment behavior
-        this.cohesionWeight = 0.1; // Weight for cohesion behavior
-        this.separationWeight = 0.2; // Weight for separation behavior
+        this.cohesionWeight = 1; // Weight for cohesion behavior
+        this.separationWeight = 0.5; // Weight for separation behavior
         this.avoidWeight = 1; // Weight for avoidance behavior
-        this.endWeight = 0.0015; // Weight for end behavior
+        this.endWeight = 0.00005; // Weight for end behavior
         this.endPoint = new THREE.Vector3(62.5, 37.5, 0); // End point for end behavior calculations
         
         this.headless = headless;
@@ -30,6 +30,13 @@ export default class Flock{
         this.polarisation = 0;
         this.polarTotal = 0;
 
+        this.avgFluctuation = new THREE.Vector3(0,0,0);
+        this.totalFluctuation = new THREE.Vector3(0,0,0);
+        this.fluctuationTotal = 0;
+
+        this.content = "";
+
+        this.collisionIterationCounter = 0;
     }
 
     /**
@@ -86,7 +93,11 @@ export default class Flock{
                     total++;
                 }
                 boid.update();
-                this.collision(boid);
+                if (this.collisionIterationCounter > 1000) {
+                    this.collision(boid);
+                }
+                this.collisionIterationCounter++;
+                
                 if (this.passedMill(boid)){this.passedMillNum++;};
             }
 
@@ -96,6 +107,9 @@ export default class Flock{
             this.polarisation += avgVelocity.length();
             this.polarTotal++;
         }
+
+        this.totalFluctuation.add(this.avgFluctuation);
+        this.fluctuationTotal ++;
 
         for (var i=0; i<this.windmills.length; i++){
             const windmill = this.windmills[i];
@@ -124,6 +138,7 @@ export default class Flock{
             acceleration = acceleration.add(avgS.multiplyScalar(this.separationWeight));
             acceleration = acceleration.add(end.multiplyScalar(this.endWeight));
         }
+        this.avgFluctuation = this.avgFluctuation.add(this.getAverageFluctuation());
         boid.acceleration = acceleration
     }
 
@@ -376,35 +391,114 @@ export default class Flock{
         };
     }
 
+    /**
+     * @returns {object} - average fluctuation across all boids
+     * gets the average fluctuation of all the boids
+     */
+    getAverageFluctuation(){
+        var fluctuationTotal = new THREE.Vector3(0,0,0);
+        var total = 0;
+        console.log()
+        this.flock.forEach(boid => {
+            boid.getFluctuation(this.flock)
+            fluctuationTotal = fluctuationTotal.add(boid.fluctuation);
+            total ++;
+        });
+        return fluctuationTotal.divideScalar(total);
+    }
+
+    
+    /**
+     * @param {number} distance - the distance used for calculating the correlation within said distance
+     */
+    correlation(distance){
+        const c0 = 1; //normalisation factor
+        var fluctuationSum = 0;
+        var total = 0;
+        this.flock.forEach(boid => {
+            this.flock.forEach(i => {
+                const distBetween = boid.position.distanceTo(i.position);
+                const delta = (distance - 20 < distBetween && distance + 20 > distBetween) ? 1 : 0
+
+                fluctuationSum += delta * (boid.fluctuation.dot(i.fluctuation));
+                total += delta;
+            });
+        }); 
+
+       var correlation = (1 / c0) * (fluctuationSum / total);
+       return correlation;
+    }
+
 
     /**
-     * Resets the simulation and cycles through variations on the boid parameters
+     * Resets the simulation and creates the output for the txt file
      */
     reset(){
-        console.log("config for run");
+
         const boid = this.flock[0];
-        console.log("FOV: ", Math.round((360 * (boid.fov + (Math.PI / 2))) / Math.PI));
-        console.log("Max Speed: ", boid.maxSpeed);
-        console.log("Max Vision: ", boid.vision);
-        console.log("Collision Positions ", this.collisionPos);
-        console.log("Average Polarisation: ", this.polarisation / this.polarTotal)
-
-
-        this.fovCounter++;
-        if (this.maxSpeedCounter == boid.maxSpeeds.lenght) {this.visionCounter++; this.maxSpeedCounter = 0; this.fovCounter = 0;}
-        if  (this.fovCounter == boid.fovs.length) {this.maxSpeedCounter++; this.fovCounter = 0;}
         
+        console.log("config for run");
+        this.content += "\n@"
+
+        console.log("FOV: ", Math.round((360 * (boid.fov + (Math.PI / 2))) / Math.PI));
+        this.content += "\nFOV: " + (Math.round((360 * (boid.fov + (Math.PI / 2))) / Math.PI).toString());
+        
+        console.log("Max Speed: ", boid.maxSpeed);
+        this.content += ("\nMax Speed: " + boid.maxSpeed.toString());
+        
+        console.log("Max Vision: ", boid.vision);
+        this.content += ("\nMax Vision: " + boid.vision.toString());
+        
+        console.log("Collision Positions ", this.collisionPos);
+        this.content += ("\nCollision Positions: " + this.collisionPos.toString());
+        this.collisionPos = [];
+        
+        console.log("Average Polarisation: ", this.polarisation / this.polarTotal);
+        this.content += ("\nAverage Polarisation: " + (this.polarisation / this.polarTotal).toString());
+        
+        const avgFluc = this.totalFluctuation.divideScalar(this.fluctuationTotal);
+        const avgFlucAsString = `(${avgFluc.x}, ${avgFluc.y}, ${avgFluc.z})`;
+        console.log("Average Fluctuation: ", avgFlucAsString); 
+        this.content += ("\nAverage Fluctuation: " + avgFlucAsString);
+        
+        console.log("Correlation at dist=5: ", this.correlation(5));
+        console.log("Correlation at dist=10: ", this.correlation(10));
+        console.log("Correlation at dist=20: ", this.correlation(20));
+        console.log("Correlation at dist=50: ", this.correlation(50));
+        console.log("Correlation at dist=100: ", this.correlation(100));
+        console.log("Correlation at dist=200: ", this.correlation(200));
+        
+        this.content += ("\nCorrelation at dist=5: " + this.correlation(5).toString());
+        this.content += ("\nCorrelation at dist=10: " + this.correlation(10).toString());
+        this.content += ("\nCorrelation at dist=20: " + this.correlation(20).toString());
+        this.content += ("\nCorrelation at dist=50: " + this.correlation(50).toString());
+        this.content += ("\nCorrelation at dist=100: " + this.correlation(100).toString());
+        this.content += ("\nCorrelation at dist=200: " + this.correlation(200).toString());
+                
         for(var i=0;i<this.flock.length;i++){
             const boid = this.flock[i]; 
             
             if (boid.dead){
-                boid.dead = true;
+                boid.dead = false;
             }
             boid.resetPositions(this.bound);
-            this.collisionNum = 0;
+        }
+        this.collisionNum = 0;
+        this.collisionIterationCounter = 0;
+        console.log("resetting flock...");
+    }
 
-            boid.updateFOV(this.fovCounter);
-            
+    /**
+     * cycles through the boids paramters
+     */
+    updateParameters(){
+        const boid = this.flock[0];
+        this.fovCounter++;
+        if (this.maxSpeedCounter == boid.maxSpeeds.length) {this.visionCounter++; this.maxSpeedCounter = 0; this.fovCounter = 0;}
+        if  (this.fovCounter == boid.fovs.length) {this.maxSpeedCounter++; this.fovCounter = 0;}
+        for(var i=0;i<this.flock.length;i++){
+            const boid = this.flock[i]; 
+            boid.updateFOV(this.fovCounter);    
             if (this.fovCounter == 0){
                 boid.updateMaxSpeed(this.maxSpeedCounter);
             }
@@ -413,6 +507,5 @@ export default class Flock{
                 boid.updateVisionRange(this.visionCounter);
             }
         }
-        console.log("resetting flock and updating parmeters...");
     }
 }

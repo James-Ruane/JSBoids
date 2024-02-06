@@ -19,16 +19,24 @@ export default class Boid{
         // The boids state (Dead / Alive)      
         this.dead = false;        
         // Boids characteristics 
-        this.visions = [5, 25, 45, 65, 85, 105, 125, 145, 165, 185, 205];
+        this.visions = [50, 100, 150]; //5, 50, 100, 150
         this.vision = this.visions[0]; // Vision range of the boid
         
-        this.maxSpeeds = [0.2, 0.3, 0.4, 0.5, 0.6];
+        this.maxSpeeds = [0.2, 0.4, 0.6]; // 0.2, 0.4, 0.6
         this.maxSpeed = this.maxSpeeds[0]; // Maximum speed the boid can achieve
 
-        this.fovs = [-(Math.PI / 2), -(5 * Math.PI / 12), -(Math.PI / 3), -(Math.PI / 4), -(Math.PI / 6), -(Math.PI / 12), 0, // 0,  30, 60 ,90 , 120, 150, 180
-                    (Math.PI / 12), (Math.PI / 6), (Math.PI / 4), (Math.PI / 3), (5 * Math.PI / 12), (Math.PI / 2)]; // 210, 240, 270, 300, 330, 360
-        
+        this.fovs = [-(5 * Math.PI / 12),  -(Math.PI / 4),  0, (Math.PI / 2)];// 30, 90 , 180, 360
+
+                    // +- (5 * Math.PI / 12)- 30 / 330
+                    // +- (Math.PI / 3)     - 60 / 300
+                    // +- (Math.PI / 4)     - 90 / 270
+                    // +- -(Math.PI / 6)    - 120 / 240
+                    // +- (Math.PI / 12)    - 150 / 210
+                    
+
         this.fov = this.fovs[0]; // FOV of the boid in radians between -pi/2 and pi/2
+
+        this.fluctuation = 0;
         
     }
 
@@ -63,7 +71,7 @@ export default class Boid{
 
         if(((x)**2 + (y)**2 + ((z)**2)) < this.vision**2){
             if (b > 0){
-                if ((y < -(z / Math.tan(b))) || (y > (z / Math.tan(b))) && (x < -(z / Math.tan(b))) || (x > (z / Math.tan(b)))){
+                if (!((y > -(z / Math.tan(b))) && (y < (z / Math.tan(b))) && (x > -(z / Math.tan(b))) && (x < (z / Math.tan(b))))){
                     return true;
                 }
             } else if (b < 0){
@@ -71,7 +79,7 @@ export default class Boid{
                     return true;
                 }
             } else if (b == 0){
-                if (z < 0 && y < 0){
+                if (z < 0){
                     return true;
                 }
             }
@@ -145,6 +153,22 @@ export default class Boid{
         this.position.set(x,y,z);
         this.velocity.set(this.random(-2,2), this.random(-2,2), this.random(-2,0));
         this.acceleration.set(this.random(-2, 2), this.random(-2,2), this.random(-2,0));
+    }
+
+    /**
+     * @param {object} flock - The flock object containing all boids
+     * gets the fluctuation value for each value, which is the distance between the boid and the flocks centre of mass
+     */
+    getFluctuation(flock){
+        var avgVelocity = new THREE.Vector3(0,0,0);
+        var total = 0;
+        var tempVelo = this.velocity.clone();
+        flock.forEach(boid => {
+            avgVelocity.add(boid.velocity)
+            total ++;
+        });
+        avgVelocity.set(avgVelocity.x / total, avgVelocity.y / total, avgVelocity.z / total);
+        this.fluctuation = new THREE.Vector3(tempVelo.x - avgVelocity.x, tempVelo.y - avgVelocity.y, tempVelo.z - avgVelocity.z);
     }
 }
 

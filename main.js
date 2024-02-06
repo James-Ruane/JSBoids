@@ -11,9 +11,13 @@ class Application {
         this.simpleRenderer = undefined;
         this.boids = undefined;
         this.flock = undefined;
-        this.numBoids = 300; 
-        this.bound = new THREE.Vector3(125, 75, 375);  
+        this.numBoids = 100; 
+        this.bound = new THREE.Vector3(125, 75, 675);  
         this.headless = false;
+        this.iterations = 0;
+        this.speciesIterations = 0;
+        this.runNo = 0;
+        this.frames = 0;
     }
 
     /**
@@ -41,19 +45,35 @@ class Application {
      * Initiates the rendering loop for the simulation and gathers data for analysis and resets simulation
      */
     render() {  // TODO: Gather data for analysis
+        if (this.iterations == 12) {
+            const blob = new Blob([this.flock.content], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = (this.runNo.toString()) +'.txt';
+            this.runNo++;
+            link.click();
+            this.iterations = 0;
+            this.flock.content = "";
+        }
         // Initiates the rendering loop by calling 'render' method using requestAnimationFrame
         window.requestAnimationFrame(this.render.bind(this), 1000/30); // Call at 30 FPS
-        if (this.flock.collisionNum + this.flock.passedMillNum < this.numBoids * 0.9){ //TODO: update this condition
+        this.frames++;
+        if ((this.flock.collisionNum + this.flock.passedMillNum < this.numBoids * 0.9) && (this.frames < 2400)){ 
             this.flock.iterate(); // Update flock behavior and state
             if (!this.headless) {
                 this.simpleRenderer.render(); // Render the updated state of the simulation 
             }
         }else{
-            this.flock.reset() // Reset flock behavior and state 
+            if (this.frames >= 2400){this.flock.content += "=====TIMED_OUT====="; console.log("timeout")}
+            this.flock.reset() // Reset flock behavior and state
+            this.frames = 0;
+            this.speciesIterations++;
+            if (this.speciesIterations == 12){
+                this.flock.updateParameters(); // Update parameters
+                this.speciesIterations = 0;
+            }
+            this.iterations++;
         }
-
-        // TODO: some form of boid reset i.e. based off both number of collisions and number of boids making it to the end
-        // If collision + boids who reached end > theshold -> output stats, update parameters and reurn  
     }
 
 }
