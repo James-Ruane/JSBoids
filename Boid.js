@@ -14,18 +14,18 @@ export default class Boid{
         this.deadMesh = new THREE.Mesh( this.geometry, this.deadMaterial );
        // The boids position, velocity and acceleration vectors
         this.position = new THREE.Vector3(x,y,z);
-        this.velocity = new THREE.Vector3(this.random(-2,2), this.random(-2,2), this.random(-2,0)); // changed to zero so boids start moving in correct direction
-        this.acceleration = new THREE.Vector3(this.random(-2, 2), this.random(-2,2), this.random(-2,0));
+        this.velocity = new THREE.Vector3(this.random(-2,2), this.random(-2,2), this.random(-2,2)); // changed to zero so boids start moving in correct direction
+        this.acceleration = new THREE.Vector3(this.random(-2, 2), this.random(-2,2), this.random(-2,2));
         // The boids state (Dead / Alive)      
         this.dead = false;        
         // Boids characteristics 
-        this.visions = [50, 100, 150]; //5, 50, 100, 150
+        this.visions = [5, 50, 100, 150]; //5, 50, 100, 150
         this.vision = this.visions[0]; // Vision range of the boid
         
         this.maxSpeeds = [0.2, 0.4, 0.6]; // 0.2, 0.4, 0.6
         this.maxSpeed = this.maxSpeeds[0]; // Maximum speed the boid can achieve
 
-        this.fovs = [-(5 * Math.PI / 12),  -(Math.PI / 4),  0, (Math.PI / 2)];// 30, 90 , 180, 360
+        this.fovs = [ -(5 * Math.PI / 12),  -(Math.PI / 4), 0, (Math.PI / 2)];// 30, 90 , 180, 360
 
                     // +- (5 * Math.PI / 12)- 30 / 330
                     // +- (Math.PI / 3)     - 60 / 300
@@ -36,7 +36,7 @@ export default class Boid{
 
         this.fov = this.fovs[0]; // FOV of the boid in radians between -pi/2 and pi/2
 
-        this.fluctuation = 0;
+        this.fluctuation = new THREE.Vector3(0,0,0);;
         
     }
 
@@ -153,22 +153,6 @@ export default class Boid{
         this.position.set(x,y,z);
         this.velocity.set(this.random(-2,2), this.random(-2,2), this.random(-2,0));
         this.acceleration.set(this.random(-2, 2), this.random(-2,2), this.random(-2,0));
-    }
-
-    /**
-     * @param {object} flock - The flock object containing all boids
-     * gets the fluctuation value for each value, which is the distance between the boid and the flocks centre of mass
-     */
-    getFluctuation(flock){
-        var avgVelocity = new THREE.Vector3(0,0,0);
-        var total = 0;
-        var tempVelo = this.velocity.clone();
-        flock.forEach(boid => {
-            avgVelocity.add(boid.velocity)
-            total ++;
-        });
-        avgVelocity.set(avgVelocity.x / total, avgVelocity.y / total, avgVelocity.z / total);
-        this.fluctuation = new THREE.Vector3(tempVelo.x - avgVelocity.x, tempVelo.y - avgVelocity.y, tempVelo.z - avgVelocity.z);
     }
 }
 

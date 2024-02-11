@@ -66,3 +66,136 @@ boid.localVelocity.z = 0.9*boid.localVelocity.z + 0.1*boid.velocity.z;
 boid.mesh.lookAt(boid.mesh.position.x + boid.localVelocity.x,
             boid.mesh.position.y + boid.localVelocity.y,
             boid.mesh.position.z + boid.localVelocity.z);
+
+
+
+getFluctuation(boid){
+    var avgVelocity = new THREE.Vector3(0,0,0);
+    var total = 0;
+    var tempVelo = boid.velocity.clone().divideScalar(boid.maxSpeed); 
+    this.flock.forEach(i => {
+        if ((!isNaN(i.velocity.x)) && (!isNaN(i.velocity.y)) && (!isNaN(i.velocity.z))){ 
+            avgVelocity = avgVelocity.add(i.velocity)
+            total ++;
+        }
+    });
+    avgVelocity = avgVelocity.set(avgVelocity.x / total, avgVelocity.y / total, avgVelocity.z / total).divideScalar(boid.maxSpeed);
+    boid.fluctuation = new THREE.Vector3(tempVelo.x - avgVelocity.x, tempVelo.y - avgVelocity.y, tempVelo.z - avgVelocity.z);
+}
+
+
+
+    calculateCorrelation(distance, c0) {
+        const N = this.flock.length;
+        const threshold = 5;
+    
+        let numerator = 0;
+        let denominator = 0;
+    
+        for (let i = 0; i < N; i++) {
+          for (let j = 0; j < N; j++) {
+            if (i !== j) {
+                const rij = Math.sqrt(
+                                    (this.flock[i].position.x - this.flock[j].position.x)**2 +
+                                    (this.flock[i].position.y - this.flock[j].position.y)**2 +
+                                    (this.flock[i].position.z - this.flock[j].position.z)**2
+                                    );
+                const delta = rij - distance;
+                const diracDelta = delta <= threshold ? 1 : 0; // smoothed Dirac delta function
+                const dotProduct = this.flock[i].fluctuation.dot(this.flock[j].fluctuation);
+                numerator += dotProduct * diracDelta;
+                denominator += diracDelta;
+            }
+          }
+        }
+        const correlation = (1 / c0) * (numerator / denominator);
+        return correlation;
+    }
+
+
+
+     // calculateCorrelation(r) {
+    //     let c0 = 0;
+    //     let sum = 0;
+    
+    //     // Calculate c0
+    //     for (let i = 0; i < this.flock.length; i++) {
+    //         c0 += Math.pow(this.magnitude(this.flock[i].velocity), 2);
+    //     }
+    //     c0 /= this.flock.length;
+    
+    //     // Calculate C(r)
+    //     for (let i = 0; i < this.flock.length; i++) {
+    //         for (let j = i + 1; j < this.flock.length; j++) {
+    //             let rij = this.distanceTo(this.flock[i].position, this.flock[j].position);
+    //             let tempi = this.flock[i].velocity.clone().divideScalar(this.flock.length);
+    //             let tempj = this.flock[j].velocity.clone().divideScalar(this.flock.length);
+    //             let ui = this.flock[i].velocity.clone()
+    //             let uj = this.flock[j].velocity.clone()
+
+    //             ui = ui.set(ui.x - tempi.x, ui.y - tempi.y, ui.z - tempi.z)
+    //             uj = uj.set(uj.x - tempj.x, uj.y - tempj.y, uj.z - tempj.z)
+
+    //             let dotProduct = ui.dot(uj);
+    //             let smoothedDirac = this.deltaSmoothed(r - rij);
+    //             sum += dotProduct * smoothedDirac;
+    //         }
+    //     }
+    
+    //     return sum / c0;
+    // }
+    
+    // Smoothed Dirac delta function
+    deltaSmoothed(r) {
+        const epsilon = 0.01; // Smoothing parameter
+        if (r < epsilon) {
+            return 1 / (2 * epsilon);
+        } else {
+            return 0;
+        }
+    }
+    
+    magnitude(vec) {
+        return Math.sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
+    }
+    
+    distanceTo(vec1, vec2) {
+        return Math.sqrt(Math.pow(vec1.x - vec2.x, 2) + Math.pow(vec1.y - vec2.y, 2) + Math.pow(vec1.z - vec2.z, 2));
+    }
+
+    calculateDotProduct() {
+        const N = this.flock.length;
+        let dotProductSum = 0;
+    
+        for (let i = 0; i < N; i++) {
+          for (let j = 0; j < N; j++) {
+            if (i !== j) {
+              dotProductSum += this.flock[i].velocity * this.flock[j].velocity;
+            }
+          }
+        }
+    
+        return dotProductSum;
+      }
+    
+      calculateNormalizationFactor() {
+        const dotProductSum = this.calculateDotProduct();
+        const N = this.flock.length;
+        const c0 = dotProductSum / (N * (N - 1));
+        return c0;
+      }
+
+
+      getFluctuation(boid){
+        var avgVelocity = new THREE.Vector3(0,0,0);
+        var total = 0;
+        var tempVelo = boid.velocity.clone().divideScalar(boid.maxSpeed); 
+        this.flock.forEach(i => {
+            if ((!isNaN(i.velocity.x)) && (!isNaN(i.velocity.y)) && (!isNaN(i.velocity.z))){ 
+                avgVelocity = avgVelocity.add(i.velocity)
+                total ++;
+            }
+        });
+        avgVelocity = avgVelocity.set(avgVelocity.x / total, avgVelocity.y / total, avgVelocity.z / total).divideScalar(boid.maxSpeed);
+        boid.fluctuation = new THREE.Vector3(tempVelo.x - avgVelocity.x, tempVelo.y - avgVelocity.y, tempVelo.z - avgVelocity.z);
+    }

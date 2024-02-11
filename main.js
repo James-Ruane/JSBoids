@@ -11,13 +11,15 @@ class Application {
         this.simpleRenderer = undefined;
         this.boids = undefined;
         this.flock = undefined;
-        this.numBoids = 100; 
+        this.numBoids = 300; 
         this.bound = new THREE.Vector3(125, 75, 675);  
         this.headless = false;
         this.iterations = 0;
         this.speciesIterations = 0;
         this.runNo = 0;
         this.frames = 0;
+        this.dataOutputted = false;
+        this.setup = true;
     }
 
     /**
@@ -58,7 +60,23 @@ class Application {
         // Initiates the rendering loop by calling 'render' method using requestAnimationFrame
         window.requestAnimationFrame(this.render.bind(this), 1000/30); // Call at 30 FPS
         this.frames++;
-        if ((this.flock.collisionNum + this.flock.passedMillNum < this.numBoids * 0.9) && (this.frames < 2400)){ 
+        if (this.setup){
+            const boid = this.flock.flock[0];
+            console.log("config for run");
+            this.flock.content += "\n@"
+            console.log("FOV: ", Math.round((360 * (boid.fov + (Math.PI / 2))) / Math.PI));
+            this.flock.content += "\nFOV: " + (Math.round((360 * (boid.fov + (Math.PI / 2))) / Math.PI).toString());
+            console.log("Max Speed: ", boid.maxSpeed);
+            this.flock.content += ("\nMax Speed: " + boid.maxSpeed.toString());
+            console.log("Max Vision: ", boid.vision);
+            this.flock.content += ("\nMax Vision: " + boid.vision.toString());
+            this.setup = false;
+        }
+        if ((this.flock.collisionNum + this.flock.passedMillNum < this.numBoids * 0.98) && (this.frames < 2400)){ 
+            if (this.frames == 400){//this.flock.collisionNum + this.flock.passedMillNum == 1 && !this.dataOutputted) {
+                this.dataOutputted = true;
+                this.flock.outputFlocking();
+            }
             this.flock.iterate(); // Update flock behavior and state
             if (!this.headless) {
                 this.simpleRenderer.render(); // Render the updated state of the simulation 
@@ -68,6 +86,7 @@ class Application {
             this.flock.reset() // Reset flock behavior and state
             this.frames = 0;
             this.speciesIterations++;
+            this.setup = true;
             if (this.speciesIterations == 12){
                 this.flock.updateParameters(); // Update parameters
                 this.speciesIterations = 0;
