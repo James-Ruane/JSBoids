@@ -25,7 +25,7 @@ export default class Boid{
         this.maxSpeeds = [0.2, 0.4, 0.6]; // 0.2, 0.4, 0.6
         this.maxSpeed = this.maxSpeeds[0]; // Maximum speed the boid can achieve
 
-        this.fovs = [ -(5 * Math.PI / 12),  -(Math.PI / 4), 0, (Math.PI / 2)];// 30, 90 , 180, 360
+        this.fovs = [-(5 * Math.PI / 12),  -(Math.PI / 4),  0, (Math.PI / 2)];// 30, 90 , 180, 360
 
                     // +- (5 * Math.PI / 12)- 30 / 330
                     // +- (Math.PI / 3)     - 60 / 300

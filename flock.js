@@ -504,7 +504,7 @@ export default class Flock{
         console.log("Average Fluctuation: ", avgFlucAsString); 
         this.content += ("\nAverage Fluctuation: " + avgFlucAsString);
 
-        const c0 = this.findBestC0ForUnitCorrelationAtZero(0.00000001, 0.01, 0.00001)
+        const c0 = this.findBestC0ForUnitCorrelationAtZero(0.00000001, 0.05, 0.000001)
 
         console.log(c0)
 
