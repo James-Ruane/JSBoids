@@ -18,7 +18,6 @@ class Application {
         this.speciesIterations = 0;
         this.runNo = 0;
         this.frames = 0;
-        this.dataOutputted = false;
         this.setup = true;
     }
 
@@ -46,12 +45,13 @@ class Application {
     /**
      * Initiates the rendering loop for the simulation and gathers data for analysis and resets simulation
      */
-    render() {  // TODO: Gather data for analysis
-        if (this.iterations == 12) {
+    render() {
+        const boid = this.flock.flock[0];   
+        if (this.iterations == 50) {
             const blob = new Blob([this.flock.content], { type: 'text/plain' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = (this.runNo.toString()) +'.txt';
+            link.download = (Math.round((360 * (boid.fov + (Math.PI / 2))) / Math.PI).toString()) + ','+ boid.maxSpeed.toString() + ',' + boid.vision.toString() +'.txt';
             this.runNo++;
             link.click();
             this.iterations = 0;
@@ -72,22 +72,18 @@ class Application {
             this.flock.content += ("\nMax Vision: " + boid.vision.toString());
             this.setup = false;
         }
-        if ((this.flock.collisionNum + this.flock.passedMillNum < this.numBoids * 0.98) && (this.frames < 2400)){ 
-            if (this.frames == 400){//this.flock.collisionNum + this.flock.passedMillNum == 1 && !this.dataOutputted) {
-                this.dataOutputted = true;
-                this.flock.outputFlocking();
-            }
+        if ((this.flock.collisionNum + this.flock.passedMillNum < this.numBoids * 0.9) && (this.frames < 2400)){ 
             this.flock.iterate(); // Update flock behavior and state
             if (!this.headless) {
                 this.simpleRenderer.render(); // Render the updated state of the simulation 
             }
         }else{
-            if (this.frames >= 2400){this.flock.content += "=====TIMED_OUT====="; console.log("timeout")}
+            if (this.frames >= 4800){this.flock.content += "=====TIMED_OUT====="; console.log("timeout")}
             this.flock.reset() // Reset flock behavior and state
             this.frames = 0;
             this.speciesIterations++;
             this.setup = true;
-            if (this.speciesIterations == 12){
+            if (this.speciesIterations == 50){
                 this.flock.updateParameters(); // Update parameters
                 this.speciesIterations = 0;
             }

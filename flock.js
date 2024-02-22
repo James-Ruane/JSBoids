@@ -8,11 +8,11 @@ export default class Flock{
         this.bound = bound; // Boundaries object containing x, y, z dimensions
         this.flock = []; // Array to hold boid objects
         this.windmills = []; // Array to hold windmill objects
-        this.allignWeight = .5; // Weight for alignment behavior
-        this.cohesionWeight = .6; // Weight for cohesion behavior
+        this.allignWeight = .4; // Weight for alignment behavior
+        this.cohesionWeight = .2; // Weight for cohesion behavior
         this.separationWeight = .07; // Weight for separation behavior
-        this.avoidWeight = 0.5; // Weight for avoidance behavior
-        this.endWeight = 0.001; // Weight for end behavior
+        this.avoidWeight = 1; // Weight for avoidance behavior
+        this.endWeight = 0.052; // Weight for end behavior
         this.endPoint = new THREE.Vector3(62.5, 37.5, 0); // End point for end behavior calculations
         
         this.headless = headless;
@@ -132,7 +132,7 @@ export default class Flock{
         acceleration = acceleration.add(boundAsObj.multiplyScalar(this.avoidWeight));
 
         if (avoidance.x != 0 || avoidance.y != 0 || avoidance.z != 0){
-            acceleration = acceleration.add(avoidance.multiplyScalar(0.5));
+            acceleration = acceleration.add(avoidance.multiplyScalar(this.avoidWeight));
             acceleration = acceleration.add(end.multiplyScalar(0.05));
         } else{            
             acceleration = acceleration.add(avgA.multiplyScalar(this.allignWeight));
@@ -140,6 +140,7 @@ export default class Flock{
             acceleration = acceleration.add(avgS.multiplyScalar(this.separationWeight));
             acceleration = acceleration.add(end.multiplyScalar(this.endWeight));
         }
+       if(acceleration.z > 0){acceleration.z = acceleration.z*-1}
         boid.acceleration = acceleration
     }
 
@@ -247,7 +248,7 @@ export default class Flock{
     * @param {object} boid - The boid to apply the rule to
     * @returns {THREE.Vector3} an normalised vector representing the average direction to move towards
     */
-    avoidance(boid){    // TODO maybe find the closest point to the boid, instead of first
+    avoidance(boid){   
         const avoid = new THREE.Vector3(0,0,0);
         let pointsInFOV = [];
         for(var i=0; i<this.windmills.length; i++){
@@ -262,6 +263,8 @@ export default class Flock{
             const distance =  Math.sqrt((boid.position.x - pointsInFOV[0][0])**2 + (boid.position.y - pointsInFOV[0][1])**2 + (boid.position.z - pointsInFOV[0][2])**2)
             const oy = boid.position.y - pointsInFOV[0][1];
             avoid.y += (oy/distance)/distance;
+            const ox = boid.position.x - pointsInFOV[0][0];
+            avoid.x += (ox/distance)/distance;
         }
         return avoid;
     }
@@ -286,7 +289,7 @@ export default class Flock{
             }
             if (mill.pointInWindmill(mX, mY, mZ)){
                 boid.dead=true;
-                this.collisionPos.push([mX, mY, mZ]);
+                this.collisionPos.push([Math.round(mX), Math.round(mY), Math.round(mZ)]);
                 this.collisionNum++;
             }
         });
@@ -407,127 +410,6 @@ export default class Flock{
             gridKey : `${gridX}_${gridY}_${gridZ}`, 
             maxArr: [(gridX == maxX || gridX == 0),(gridY == maxY || gridY == 0), (gridZ == maxZ || gridZ == 0)]
         };
-    }
-
-    /**
-     * @param {object} boid - The boid to get the fluctuation of
-     * gets the fluctuation value for the boid, which is the distance between the boid and the flocks centre of mass
-     */
-    calculateFluctuations() {
-    const N = this.flock.length;
-
-    for (let i = 0; i < N; i++) {
-      let sumOfVelocities = new THREE.Vector3(0,0,0);
-      for (let j = 0; j < N; j++) {
-        if (i !== j) {
-          sumOfVelocities.add(this.flock[j].velocity);
-        }
-      }
-      const summation = sumOfVelocities.multiplyScalar(1/N)
-      const velocity = this.flock[i].velocity;
-      const fluctuation = new THREE.Vector3(velocity.x - summation.x, velocity.y - summation.y, velocity.z - summation.z);
-      this.flock[i].fluctuation = fluctuation;
-    }
-    }
-
-    /**
-     * @returns {object} - total fluctuation across all boids
-     * gets the toal fluctuation of all the boids by definition should be 0
-     */
-    getTotalFluctuation(){
-        var fluctuationTotal = new THREE.Vector3(0,0,0);
-        this.flock.forEach(boid => {
-            fluctuationTotal.add(boid.fluctuation);
-        });
-        return fluctuationTotal.roundToZero(); 
-    }
-    
-    /**
-     * @param {number} distance - the distance used for calculating the correlation within said distance
-     * Calculates the flocks scale free correlation
-     */
-    correlation(distance, c0){
-        this.calculateFluctuations()
-        var fluctuationSum = 0;
-        var total = 0;
-        this.flock.forEach(boid => {
-            this.flock.forEach(i => {
-                if (boid != i) {
-                    const distBetween = Math.abs(boid.position.distanceTo(i.position));
-                    const dot = boid.fluctuation.dot(i.fluctuation)
-                    const tolerance = 10;
-                    if (Math.abs(distBetween - distance) < tolerance){
-                        fluctuationSum += dot;
-                        total ++;   
-                    }
-                }
-            });
-        }); 
-        var correlation = (1 / c0) * (fluctuationSum / total);
-        return correlation;
-    }
-
-    /**
-     * finds the best normalisation factor that makes c(0)=1
-     * @param {float} minC0 - the minimum value c0 can be
-     * @param {float} maxC0 - the maximum value c0 can be
-     * @param {float} stepSize - the step size c0 takes each iteration
-     * @returns {float} - the c0 normalisiation parameter for that flock
-     */
-    findBestC0ForUnitCorrelationAtZero(minC0, maxC0, stepSize) {
-        let bestC0 = minC0;
-        let minDifference = Infinity;
-    
-        for (let c0 = minC0; c0 <= maxC0; c0 += stepSize) {
-          const correlationAtZero = this.correlation(0, c0);
-          const difference = Math.abs(correlationAtZero - 1);
-    
-          if (difference < minDifference) {
-            minDifference = difference;
-            bestC0 = c0;
-          }
-        }
-        return bestC0;
-    }
-    
-    /**
-     * Outputs the flocking statistics - polarisation, fluctuation and correlation
-     */
-    outputFlocking(){
-        console.log("Average Polarisation: ", this.polarisation / this.polarTotal);
-        this.content += ("\nAverage Polarisation: " + (this.polarisation / this.polarTotal).toString());
-        
-        this.calculateFluctuations();
-
-        const avgFluc = this.getTotalFluctuation(); 
-        const avgFlucAsString = `(${avgFluc.x}, ${avgFluc.y}, ${avgFluc.z})`;
-        console.log("Average Fluctuation: ", avgFlucAsString); 
-        this.content += ("\nAverage Fluctuation: " + avgFlucAsString);
-
-        const c0 = this.findBestC0ForUnitCorrelationAtZero(0.00000001, 0.05, 0.000001)
-
-        console.log(c0)
-
-        var cor5 = this.correlation(5, c0)
-        var cor10 = this.correlation(10, c0)
-        var cor20 = this.correlation(20, c0)
-        var cor50 = this.correlation(50, c0)
-        var cor100 = this.correlation(100, c0)
-        var cor200 = this.correlation(200, c0)
-        
-        console.log("Correlation at dist=5: ", cor5);
-        console.log("Correlation at dist=10: ", cor10);
-        console.log("Correlation at dist=20: ", cor20);
-        console.log("Correlation at dist=50: ", cor50);
-        console.log("Correlation at dist=100: ", cor100);
-        console.log("Correlation at dist=200: ", cor200);
-        
-        this.content += ("\nCorrelation at dist=5: " + cor5.toString());
-        this.content += ("\nCorrelation at dist=10: " + cor10.toString());
-        this.content += ("\nCorrelation at dist=20: " + cor20.toString());
-        this.content += ("\nCorrelation at dist=50: " + cor50.toString());
-        this.content += ("\nCorrelation at dist=100: " + cor100.toString());
-        this.content += ("\nCorrelation at dist=200: " + cor200.toString());
     }
 
     /**

@@ -5,7 +5,7 @@ export default class Boid{
      * @param {number} y - The boids y coordinate
      * @param {number} z - The boids z coordinate
      */
-    constructor(x,y,z){// TODO create new species of boid that extends this class, main different will be vision, speed and FOV
+    constructor(x,y,z){
         // Geometery and material for rendering
         this.geometry = new THREE.SphereGeometry( 1, 64, 32 );    
         this.material = new THREE.MeshBasicMaterial( { color: 0x0000ff } );  
@@ -14,18 +14,18 @@ export default class Boid{
         this.deadMesh = new THREE.Mesh( this.geometry, this.deadMaterial );
        // The boids position, velocity and acceleration vectors
         this.position = new THREE.Vector3(x,y,z);
-        this.velocity = new THREE.Vector3(this.random(-2,2), this.random(-2,2), this.random(-2,2)); // changed to zero so boids start moving in correct direction
-        this.acceleration = new THREE.Vector3(this.random(-2, 2), this.random(-2,2), this.random(-2,2));
+        this.velocity = new THREE.Vector3(this.random(-2,2), this.random(-2,2), this.random(0,2)); // changed to zero so boids start moving in correct direction
+        this.acceleration = new THREE.Vector3(this.random(-2, 2), this.random(-2,2), this.random(0,2));
         // The boids state (Dead / Alive)      
         this.dead = false;        
         // Boids characteristics 
-        this.visions = [5, 50, 100, 150]; //5, 50, 100, 150
+        this.visions = [150, 5, 50, 150]; //5, 50, 100, 150
         this.vision = this.visions[0]; // Vision range of the boid
         
-        this.maxSpeeds = [0.2, 0.4, 0.6]; // 0.2, 0.4, 0.6
+        this.maxSpeeds = [0.6, 0.4, 0.6]; // 0.2, 0.4, 0.6
         this.maxSpeed = this.maxSpeeds[0]; // Maximum speed the boid can achieve
 
-        this.fovs = [-(5 * Math.PI / 12),  -(Math.PI / 4),  0, (Math.PI / 2)];// 30, 90 , 180, 360
+        this.fovs = [(5 * Math.PI / 12), -(5 * Math.PI / 12),  -(Math.PI / 4), 0, (Math.PI / 4), ];// 30, 90 , 180, 360
 
                     // +- (5 * Math.PI / 12)- 30 / 330
                     // +- (Math.PI / 3)     - 60 / 300
@@ -36,7 +36,7 @@ export default class Boid{
 
         this.fov = this.fovs[0]; // FOV of the boid in radians between -pi/2 and pi/2
 
-        this.fluctuation = new THREE.Vector3(0,0,0);;
+        this.fluctuation = new THREE.Vector3(0,0,0);
         
     }
 
@@ -93,7 +93,7 @@ export default class Boid{
     * @param {Array} point - The points coordinates [x, y, z] to be checked.
     * @returns {boolean} - Indicates whether the point is within the FOV and inside the windmills current area
     */  
-    windmillPointInFOV(mill, point){    // TODO should test this properly, feels right tho
+    windmillPointInFOV(mill, point){
         const x = point[0];
         const y = point[1];
         const z = point[2]; 
@@ -155,4 +155,3 @@ export default class Boid{
         this.acceleration.set(this.random(-2, 2), this.random(-2,2), this.random(-2,0));
     }
 }
-
