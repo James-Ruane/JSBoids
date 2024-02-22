@@ -12,7 +12,7 @@ class Application {
         this.boids = undefined;
         this.flock = undefined;
         this.numBoids = 300; 
-        this.bound = new THREE.Vector3(125, 75, 675);  
+        this.bound = new THREE.Vector3(250, 250, 675);  
         this.headless = false;
         this.iterations = 0;
         this.speciesIterations = 0;

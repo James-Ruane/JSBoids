@@ -8,12 +8,12 @@ export default class Flock{
         this.bound = bound; // Boundaries object containing x, y, z dimensions
         this.flock = []; // Array to hold boid objects
         this.windmills = []; // Array to hold windmill objects
-        this.allignWeight = .4; // Weight for alignment behavior
-        this.cohesionWeight = .2; // Weight for cohesion behavior
-        this.separationWeight = .07; // Weight for separation behavior
-        this.avoidWeight = 1; // Weight for avoidance behavior
-        this.endWeight = 0.052; // Weight for end behavior
-        this.endPoint = new THREE.Vector3(62.5, 37.5, 0); // End point for end behavior calculations
+        this.allignWeight = .1; // Weight for alignment behavior
+        this.cohesionWeight = .3; // Weight for cohesion behavior
+        this.separationWeight = .05; // Weight for separation behavior
+        this.avoidWeight = 2; // Weight for avoidance behavior
+        this.endWeight = 0.025; // Weight for end behavior
+        this.endPoint = new THREE.Vector3(75, 75, 0); // End point for end behavior calculations
         
         this.headless = headless;
         this.collisionNum = 0;
@@ -133,14 +133,14 @@ export default class Flock{
 
         if (avoidance.x != 0 || avoidance.y != 0 || avoidance.z != 0){
             acceleration = acceleration.add(avoidance.multiplyScalar(this.avoidWeight));
-            acceleration = acceleration.add(end.multiplyScalar(0.05));
+            acceleration = acceleration.add(end.multiplyScalar(this.endWeight * 10));
         } else{            
             acceleration = acceleration.add(avgA.multiplyScalar(this.allignWeight));
             acceleration = acceleration.add(avgC.multiplyScalar(this.cohesionWeight));
             acceleration = acceleration.add(avgS.multiplyScalar(this.separationWeight));
             acceleration = acceleration.add(end.multiplyScalar(this.endWeight));
         }
-       if(acceleration.z > 0){acceleration.z = acceleration.z*-1}
+       //if(acceleration.z > 0){acceleration.z = acceleration.z*-1}
         boid.acceleration = acceleration
     }
 
