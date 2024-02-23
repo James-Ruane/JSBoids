@@ -43,8 +43,8 @@ export default class flockHelper{
      * Pushes a windmill to the windmill array
      */
     addWindmill() {  // TODO add more windmills add more blades
-        const x = 125;
-        const y = 125;
+        const x = 62.5; // 125
+        const y = 37.5; // 125
         const z = 300;     
         const d = 125;
         const h = 10;

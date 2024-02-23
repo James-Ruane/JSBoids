@@ -13,7 +13,7 @@ export default class Flock{
         this.separationWeight = .05; // Weight for separation behavior
         this.avoidWeight = 2; // Weight for avoidance behavior
         this.endWeight = 0.025; // Weight for end behavior
-        this.endPoint = new THREE.Vector3(75, 75, 0); // End point for end behavior calculations
+        this.endPoint = new THREE.Vector3(62.5, 37.5, 0); // End point for end behavior calculations 75, 75
         
         this.headless = headless;
         this.collisionNum = 0;
@@ -434,24 +434,47 @@ export default class Flock{
         console.log("resetting flock...");
     }
 
-    /**
+    // /**
+    //  * cycles through the boids paramters
+    //  */
+    // updateParameters(){
+    //     const boid = this.flock[0];
+    //     this.fovCounter++;
+    //     if (this.maxSpeedCounter == boid.maxSpeeds.length) {this.visionCounter++; this.maxSpeedCounter = 0; this.fovCounter = 0;}
+    //     if  (this.fovCounter == boid.fovs.length) {this.maxSpeedCounter++; this.fovCounter = 0;}
+    //     for(var i=0;i<this.flock.length;i++){
+    //         const boid = this.flock[i]; 
+    //         boid.updateFOV(this.fovCounter);    
+    //         if (this.fovCounter == 0){
+    //             boid.updateMaxSpeed(this.maxSpeedCounter);
+    //         }
+            
+    //         if (this.maxSpeedCounter == 0){
+    //             boid.updateVisionRange(this.visionCounter);
+    //         }
+    //     }
+    // }
+
+
+        /**
      * cycles through the boids paramters
      */
-    updateParameters(){
-        const boid = this.flock[0];
-        this.fovCounter++;
-        if (this.maxSpeedCounter == boid.maxSpeeds.length) {this.visionCounter++; this.maxSpeedCounter = 0; this.fovCounter = 0;}
-        if  (this.fovCounter == boid.fovs.length) {this.maxSpeedCounter++; this.fovCounter = 0;}
-        for(var i=0;i<this.flock.length;i++){
-            const boid = this.flock[i]; 
-            boid.updateFOV(this.fovCounter);    
-            if (this.fovCounter == 0){
-                boid.updateMaxSpeed(this.maxSpeedCounter);
-            }
-            
-            if (this.maxSpeedCounter == 0){
-                boid.updateVisionRange(this.visionCounter);
+        updateParameters(){
+            console.log("here")
+            const boid = this.flock[0];
+            this.maxSpeedCounter++;
+            if (this.fovCounter == boid.fovs.length) {this.visionCounter++; this.fovCounter = 0; this.maxSpeedCounter = 0;}
+            if  (this.maxSpeedCounter == boid.maxSpeeds.length) {this.fovCounter++; this.maxSpeedCounter = 0;}
+            for(var i=0;i<this.flock.length;i++){
+                const boid = this.flock[i]; 
+                boid.updateMaxSpeed(this.maxSpeedCounter);    
+                if (this.maxSpeedCounter == 0){
+                    boid.updateFOV(this.fovCounter); 
+                }
+                
+                if (this.fovCounter == 0){
+                    boid.updateVisionRange(this.visionCounter);
+                }
             }
         }
-    }
 }
