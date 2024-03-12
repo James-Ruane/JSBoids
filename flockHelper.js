@@ -48,9 +48,14 @@ export default class flockHelper{
         const z = 300;     
         const d = 125;
         const h = 10;
-        const w = 2;       
-        const windmill = new Windmill(x,y,z, d, h, w, this.bound);
+        const w = 2;   
+        
+        const d2 = 10
+        const h2 = 125
+        const windmill = new Windmill(x,y,z, d, h, w, this.bound, 0);
+        const windmill2 = new Windmill(x,y,z, d2, h2, w, this.bound, 1);
         this.flock.pushToWindmills(windmill);
+        this.flock.pushToWindmills(windmill2);
     }
 
 }

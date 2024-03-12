@@ -99,7 +99,7 @@ export default class SimpleRenderer {
             this.scene.add(mill.mesh);
             mill.mesh.position.x = mill.position.x;
             mill.mesh.position.y = mill.position.y;
-            mill.mesh.position.z = mill.position.z;    
+            mill.mesh.position.z = mill.position.z;  
         });
 
         this.renderer.render(this.scene, this.camera);

@@ -19,13 +19,13 @@ export default class Boid{
         // The boids state (Dead / Alive)      
         this.dead = false;        
         // Boids characteristics 
-        this.visions = [5, 50, 100, 150]; //5, 50, 100, 150
+        this.visions = [150, 50, 100, 150]; //5, 50, 100, 150
         this.vision = this.visions[0]; // Vision range of the boid
         
-        this.maxSpeeds = [0.2, 0.4, 0.6]; // 0.2, 0.4, 0.6
+        this.maxSpeeds = [0.4, 0.4, 0.6]; // 0.2, 0.4, 0.6
         this.maxSpeed = this.maxSpeeds[0]; // Maximum speed the boid can achieve
 
-        this.fovs = [-(Math.PI / 4), -(5 * Math.PI / 12),  , 0, (Math.PI / 4), (5 * Math.PI / 12)];// 30, 90 , 180, 360
+        this.fovs = [0, -(Math.PI / 4), -(5 * Math.PI / 12),  , 0, (Math.PI / 4), (5 * Math.PI / 12)];// 30, 90 , 180, 360
 
                     // +- (5 * Math.PI / 12)- 30 / 330
                     // +- (Math.PI / 3)     - 60 / 300
