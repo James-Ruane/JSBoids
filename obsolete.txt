@@ -66,3 +66,261 @@ boid.localVelocity.z = 0.9*boid.localVelocity.z + 0.1*boid.velocity.z;
 boid.mesh.lookAt(boid.mesh.position.x + boid.localVelocity.x,
             boid.mesh.position.y + boid.localVelocity.y,
             boid.mesh.position.z + boid.localVelocity.z);
+
+
+
+getFluctuation(boid){
+    var avgVelocity = new THREE.Vector3(0,0,0);
+    var total = 0;
+    var tempVelo = boid.velocity.clone().divideScalar(boid.maxSpeed); 
+    this.flock.forEach(i => {
+        if ((!isNaN(i.velocity.x)) && (!isNaN(i.velocity.y)) && (!isNaN(i.velocity.z))){ 
+            avgVelocity = avgVelocity.add(i.velocity)
+            total ++;
+        }
+    });
+    avgVelocity = avgVelocity.set(avgVelocity.x / total, avgVelocity.y / total, avgVelocity.z / total).divideScalar(boid.maxSpeed);
+    boid.fluctuation = new THREE.Vector3(tempVelo.x - avgVelocity.x, tempVelo.y - avgVelocity.y, tempVelo.z - avgVelocity.z);
+}
+
+
+
+    calculateCorrelation(distance, c0) {
+        const N = this.flock.length;
+        const threshold = 5;
+    
+        let numerator = 0;
+        let denominator = 0;
+    
+        for (let i = 0; i < N; i++) {
+          for (let j = 0; j < N; j++) {
+            if (i !== j) {
+                const rij = Math.sqrt(
+                                    (this.flock[i].position.x - this.flock[j].position.x)**2 +
+                                    (this.flock[i].position.y - this.flock[j].position.y)**2 +
+                                    (this.flock[i].position.z - this.flock[j].position.z)**2
+                                    );
+                const delta = rij - distance;
+                const diracDelta = delta <= threshold ? 1 : 0; // smoothed Dirac delta function
+                const dotProduct = this.flock[i].fluctuation.dot(this.flock[j].fluctuation);
+                numerator += dotProduct * diracDelta;
+                denominator += diracDelta;
+            }
+          }
+        }
+        const correlation = (1 / c0) * (numerator / denominator);
+        return correlation;
+    }
+
+
+
+     // calculateCorrelation(r) {
+    //     let c0 = 0;
+    //     let sum = 0;
+    
+    //     // Calculate c0
+    //     for (let i = 0; i < this.flock.length; i++) {
+    //         c0 += Math.pow(this.magnitude(this.flock[i].velocity), 2);
+    //     }
+    //     c0 /= this.flock.length;
+    
+    //     // Calculate C(r)
+    //     for (let i = 0; i < this.flock.length; i++) {
+    //         for (let j = i + 1; j < this.flock.length; j++) {
+    //             let rij = this.distanceTo(this.flock[i].position, this.flock[j].position);
+    //             let tempi = this.flock[i].velocity.clone().divideScalar(this.flock.length);
+    //             let tempj = this.flock[j].velocity.clone().divideScalar(this.flock.length);
+    //             let ui = this.flock[i].velocity.clone()
+    //             let uj = this.flock[j].velocity.clone()
+
+    //             ui = ui.set(ui.x - tempi.x, ui.y - tempi.y, ui.z - tempi.z)
+    //             uj = uj.set(uj.x - tempj.x, uj.y - tempj.y, uj.z - tempj.z)
+
+    //             let dotProduct = ui.dot(uj);
+    //             let smoothedDirac = this.deltaSmoothed(r - rij);
+    //             sum += dotProduct * smoothedDirac;
+    //         }
+    //     }
+    
+    //     return sum / c0;
+    // }
+    
+    // Smoothed Dirac delta function
+    deltaSmoothed(r) {
+        const epsilon = 0.01; // Smoothing parameter
+        if (r < epsilon) {
+            return 1 / (2 * epsilon);
+        } else {
+            return 0;
+        }
+    }
+    
+    magnitude(vec) {
+        return Math.sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
+    }
+    
+    distanceTo(vec1, vec2) {
+        return Math.sqrt(Math.pow(vec1.x - vec2.x, 2) + Math.pow(vec1.y - vec2.y, 2) + Math.pow(vec1.z - vec2.z, 2));
+    }
+
+    calculateDotProduct() {
+        const N = this.flock.length;
+        let dotProductSum = 0;
+    
+        for (let i = 0; i < N; i++) {
+          for (let j = 0; j < N; j++) {
+            if (i !== j) {
+              dotProductSum += this.flock[i].velocity * this.flock[j].velocity;
+            }
+          }
+        }
+    
+        return dotProductSum;
+      }
+    
+      calculateNormalizationFactor() {
+        const dotProductSum = this.calculateDotProduct();
+        const N = this.flock.length;
+        const c0 = dotProductSum / (N * (N - 1));
+        return c0;
+      }
+
+
+      getFluctuation(boid){
+        var avgVelocity = new THREE.Vector3(0,0,0);
+        var total = 0;
+        var tempVelo = boid.velocity.clone().divideScalar(boid.maxSpeed); 
+        this.flock.forEach(i => {
+            if ((!isNaN(i.velocity.x)) && (!isNaN(i.velocity.y)) && (!isNaN(i.velocity.z))){ 
+                avgVelocity = avgVelocity.add(i.velocity)
+                total ++;
+            }
+        });
+        avgVelocity = avgVelocity.set(avgVelocity.x / total, avgVelocity.y / total, avgVelocity.z / total).divideScalar(boid.maxSpeed);
+        boid.fluctuation = new THREE.Vector3(tempVelo.x - avgVelocity.x, tempVelo.y - avgVelocity.y, tempVelo.z - avgVelocity.z);
+    }
+
+
+    ================================================================
+    FREE SCALE FUNCTIONS
+    ================================================================
+        /**
+     * @param {object} boid - The boid to get the fluctuation of
+     * gets the fluctuation value for the boid, which is the distance between the boid and the flocks centre of mass
+     */
+    calculateFluctuations() {
+    const N = this.flock.length;
+
+    for (let i = 0; i < N; i++) {
+      let sumOfVelocities = new THREE.Vector3(0,0,0);
+      for (let j = 0; j < N; j++) {
+        if (i !== j) {
+          sumOfVelocities.add(this.flock[j].velocity);
+        }
+      }
+      const summation = sumOfVelocities.multiplyScalar(1/N)
+      const velocity = this.flock[i].velocity;
+      const fluctuation = new THREE.Vector3(velocity.x - summation.x, velocity.y - summation.y, velocity.z - summation.z);
+      this.flock[i].fluctuation = fluctuation;
+    }
+    }
+
+    /**
+     * @returns {object} - total fluctuation across all boids
+     * gets the toal fluctuation of all the boids by definition should be 0
+     */
+    getTotalFluctuation(){
+        var fluctuationTotal = new THREE.Vector3(0,0,0);
+        this.flock.forEach(boid => {
+            fluctuationTotal.add(boid.fluctuation);
+        });
+        return fluctuationTotal.roundToZero(); 
+    }
+    
+    /**
+     * @param {number} distance - the distance used for calculating the correlation within said distance
+     * Calculates the flocks scale free correlation
+     */
+    correlation(distance, c0){
+        this.calculateFluctuations()
+        var fluctuationSum = 0;
+        var total = 0;
+        this.flock.forEach(boid => {
+            this.flock.forEach(i => {
+                if (boid != i) {
+                    const distBetween = Math.abs(boid.position.distanceTo(i.position));
+                    const dot = boid.fluctuation.dot(i.fluctuation)
+                    const tolerance = 10;
+                    if (Math.abs(distBetween - distance) < tolerance){
+                        fluctuationSum += dot;
+                        total ++;   
+                    }
+                }
+            });
+        }); 
+        var correlation = (1 / c0) * (fluctuationSum / total);
+        return correlation;
+    }
+
+    /**
+     * finds the best normalisation factor that makes c(0)=1
+     * @param {float} minC0 - the minimum value c0 can be
+     * @param {float} maxC0 - the maximum value c0 can be
+     * @param {float} stepSize - the step size c0 takes each iteration
+     * @returns {float} - the c0 normalisiation parameter for that flock
+     */
+    findBestC0ForUnitCorrelationAtZero(minC0, maxC0, stepSize) {
+        let bestC0 = minC0;
+        let minDifference = Infinity;
+    
+        for (let c0 = minC0; c0 <= maxC0; c0 += stepSize) {
+          const correlationAtZero = this.correlation(0, c0);
+          const difference = Math.abs(correlationAtZero - 1);
+    
+          if (difference < minDifference) {
+            minDifference = difference;
+            bestC0 = c0;
+          }
+        }
+        return bestC0;
+    }
+    
+    /**
+     * Outputs the flocking statistics - polarisation, fluctuation and correlation
+     */
+    outputFlocking(){
+        console.log("Average Polarisation: ", this.polarisation / this.polarTotal);
+        this.content += ("\nAverage Polarisation: " + (this.polarisation / this.polarTotal).toString());
+        
+        this.calculateFluctuations();
+
+        const avgFluc = this.getTotalFluctuation(); 
+        const avgFlucAsString = `(${avgFluc.x}, ${avgFluc.y}, ${avgFluc.z})`;
+        console.log("Average Fluctuation: ", avgFlucAsString); 
+        this.content += ("\nAverage Fluctuation: " + avgFlucAsString);
+
+        const c0 = this.findBestC0ForUnitCorrelationAtZero(0.00000001, 0.05, 0.000001)
+
+        console.log(c0)
+
+        var cor5 = this.correlation(5, c0)
+        var cor10 = this.correlation(10, c0)
+        var cor20 = this.correlation(20, c0)
+        var cor50 = this.correlation(50, c0)
+        var cor100 = this.correlation(100, c0)
+        var cor200 = this.correlation(200, c0)
+        
+        console.log("Correlation at dist=5: ", cor5);
+        console.log("Correlation at dist=10: ", cor10);
+        console.log("Correlation at dist=20: ", cor20);
+        console.log("Correlation at dist=50: ", cor50);
+        console.log("Correlation at dist=100: ", cor100);
+        console.log("Correlation at dist=200: ", cor200);
+        
+        this.content += ("\nCorrelation at dist=5: " + cor5.toString());
+        this.content += ("\nCorrelation at dist=10: " + cor10.toString());
+        this.content += ("\nCorrelation at dist=20: " + cor20.toString());
+        this.content += ("\nCorrelation at dist=50: " + cor50.toString());
+        this.content += ("\nCorrelation at dist=100: " + cor100.toString());
+        this.content += ("\nCorrelation at dist=200: " + cor200.toString());
+    }

@@ -8,18 +8,35 @@ export default class Flock{
         this.bound = bound; // Boundaries object containing x, y, z dimensions
         this.flock = []; // Array to hold boid objects
         this.windmills = []; // Array to hold windmill objects
-        this.allignWeight = 2; // Weight for alignment behavior
-        this.cohesionWeight = 0.1; // Weight for cohesion behavior
-        this.separationWeight = 0.2; // Weight for separation behavior
-        this.avoidWeight = 1; // Weight for avoidance behavior
-        this.endWeight = 0.0015; // Weight for end behavior
-        this.endPoint = new THREE.Vector3(62.5, 37.5, 0); // End point for end behavior calculations
+        this.allignWeight = .1; // Weight for alignment behavior
+        this.cohesionWeight = .3; // Weight for cohesion behavior
+        this.separationWeight = .05; // Weight for separation behavior
+        this.avoidWeight = 2; // Weight for avoidance behavior
+        this.endWeight = 0.025; // Weight for end behavior
+        this.endPoint = new THREE.Vector3(62.5, 37.5, 0); // End point for end behavior calculations 75, 75
         
         this.headless = headless;
         this.collisionNum = 0;
+        this.passedMillNum = 0;
 
         this.gridDictionary = {};
         this.gridSize = 5; // the larger this is the larger the grid boxes are i.e. more boids will be factored in 
+
+        this.fovCounter = 0;
+        this.maxSpeedCounter = 0;
+        this.visionCounter = 0;
+
+        this.collisionPos = [];
+        this.polarisation = 0;
+        this.polarTotal = 0;
+
+        this.avgFluctuation = new THREE.Vector3(0,0,0);
+        this.totalFluctuation = new THREE.Vector3(0,0,0);
+        this.fluctuationTotal = 0;
+
+        this.content = "";
+
+        this.collisionIterationCounter = 0;
     }
 
     /**
@@ -61,15 +78,39 @@ export default class Flock{
     */
     iterate(){
         this.gridDictionary = this.createGridDictionary(this.flock);
+        this.passedMillNum = 0;
+        var total = 0; 
+        var avgVelocity = new THREE.Vector3(0,0,0);
         for(var i=0;i<this.flock.length;i++){
             const boid = this.flock[i];
             if (!boid.dead) {
                 this.periodicBoundary(boid);
                 this.flocking(boid);
+                if (!isNaN(boid.velocity.x) && !isNaN(boid.velocity.y) && !isNaN(boid.velocity.z)) {
+                    avgVelocity.x += boid.velocity.x / boid.velocity.length();
+                    avgVelocity.y += boid.velocity.y / boid.velocity.length();
+                    avgVelocity.z += boid.velocity.z / boid.velocity.length();
+                    total++;
+                }
                 boid.update();
-                this.collision(boid);
+                if (this.collisionIterationCounter > 1000) {
+                    this.collision(boid);
+                }
+                this.collisionIterationCounter++;
+                
+                if (this.passedMill(boid)){this.passedMillNum++;};
             }
+
         }
+        avgVelocity.divideScalar(total);
+        if ((!isNaN(avgVelocity.x)) && (!isNaN(avgVelocity.x)) && (!isNaN(avgVelocity.x))){
+            this.polarisation += avgVelocity.length();
+            this.polarTotal++;
+        }
+
+        this.totalFluctuation.add(this.avgFluctuation);
+        this.fluctuationTotal ++;
+
         for (var i=0; i<this.windmills.length; i++){
             const windmill = this.windmills[i];
             windmill.update();
@@ -87,16 +128,19 @@ export default class Flock{
         let avgS = this.sep(boid);
         let end = this.end(boid);
         let avoidance = this.avoidance(boid);
+        let boundAsObj = this.boundAsObj(boid);
+        acceleration = acceleration.add(boundAsObj.multiplyScalar(this.avoidWeight));
 
         if (avoidance.x != 0 || avoidance.y != 0 || avoidance.z != 0){
-            acceleration = acceleration.add(avoidance.multiplyScalar(0.5));
-            acceleration = acceleration.add(end.multiplyScalar(0.05));
+            acceleration = acceleration.add(avoidance.multiplyScalar(this.avoidWeight));
+            acceleration = acceleration.add(end.multiplyScalar(this.endWeight * 10));
         } else{            
             acceleration = acceleration.add(avgA.multiplyScalar(this.allignWeight));
             acceleration = acceleration.add(avgC.multiplyScalar(this.cohesionWeight));
             acceleration = acceleration.add(avgS.multiplyScalar(this.separationWeight));
             acceleration = acceleration.add(end.multiplyScalar(this.endWeight));
         }
+       //if(acceleration.z > 0){acceleration.z = acceleration.z*-1}
         boid.acceleration = acceleration
     }
 
@@ -177,8 +221,7 @@ export default class Flock{
     */
     sep(boid){
         let avgS = new THREE.Vector3(0,0,0);
-        const {gridKey, maxArr} = this.generateGridKey(boid);
-
+        const gridKey = this.generateGridKey(boid);
         const boidsNear = this.gridDictionary[gridKey] || []
         boidsNear.forEach(i => {
             let dist = boid.position.distanceTo(i.position);
@@ -205,7 +248,7 @@ export default class Flock{
     * @param {object} boid - The boid to apply the rule to
     * @returns {THREE.Vector3} an normalised vector representing the average direction to move towards
     */
-    avoidance(boid){    // TODO maybe find the closest point to the boid, instead of first
+    avoidance(boid){   
         const avoid = new THREE.Vector3(0,0,0);
         let pointsInFOV = [];
         for(var i=0; i<this.windmills.length; i++){
@@ -220,6 +263,8 @@ export default class Flock{
             const distance =  Math.sqrt((boid.position.x - pointsInFOV[0][0])**2 + (boid.position.y - pointsInFOV[0][1])**2 + (boid.position.z - pointsInFOV[0][2])**2)
             const oy = boid.position.y - pointsInFOV[0][1];
             avoid.y += (oy/distance)/distance;
+            const ox = boid.position.x - pointsInFOV[0][0];
+            avoid.x += (ox/distance)/distance;
         }
         return avoid;
     }
@@ -244,11 +289,45 @@ export default class Flock{
             }
             if (mill.pointInWindmill(mX, mY, mZ)){
                 boid.dead=true;
+                this.collisionPos.push([Math.round(mX), Math.round(mY), Math.round(mZ)]);
                 this.collisionNum++;
             }
         });
     }
+
+    /**
+    * Checks to see if a boid has passed the windmill
+    * @param {object} boid - The boid to check for a collision
+    * @returns {boolean} - indicates if the boid has passed the windmill
+    */
+    passedMill(boid){
+        var passed = true;
+        this.windmills.forEach(mill => {
+            if (boid.position.z > mill.minZ){
+                passed = false;
+            }
+        });
+        return passed;
+    }
     
+    /**
+    * Pushes boids away from Z boundaries
+    * @param {object} boid - The boid to check for a collision with boundary radius
+    * @returns {THREE.Vector3} - a normalised vector representing the average direction to move towards
+    */
+    boundAsObj(boid){
+        let avoid = new THREE.Vector3(0,0,0);
+        const radius = 5;
+        const distZ = this.bound.z - boid.position.z;
+        if(boid.position.z < radius && Math.abs(boid.position.z) > 0) {
+            avoid.z += 1/boid.position.z;
+        } else if(distZ < radius && distZ > 0) {
+            avoid.z -= 1/distZ;
+        }
+    
+        return avoid;
+    }
+
     /**
      * Applies periodic boundary conditions to keep the boid within the specified bounds.
      * @param {Object} boid - The boid to which periodic boundary conditions are applied.
@@ -332,4 +411,70 @@ export default class Flock{
             maxArr: [(gridX == maxX || gridX == 0),(gridY == maxY || gridY == 0), (gridZ == maxZ || gridZ == 0)]
         };
     }
+
+    /**
+     * Resets the simulation and creates the output for the txt file
+     */
+    reset(){
+        console.log("Collision Positions ", this.collisionPos);
+        this.content += ("\nCollision Positions: " + this.collisionPos.toString());
+        this.collisionPos = [];
+    
+        for(var i=0;i<this.flock.length;i++){
+            const boid = this.flock[i]; 
+            
+            if (boid.dead){
+                boid.dead = false;
+            }
+            boid.resetPositions(this.bound);
+        }
+        this.collisionNum = 0;
+        this.collisionIterationCounter = 0;
+        this.passedMillNum = 0;
+        console.log("resetting flock...");
+    }
+
+    // /**
+    //  * cycles through the boids paramters
+    //  */
+    // updateParameters(){
+    //     const boid = this.flock[0];
+    //     this.fovCounter++;
+    //     if (this.maxSpeedCounter == boid.maxSpeeds.length) {this.visionCounter++; this.maxSpeedCounter = 0; this.fovCounter = 0;}
+    //     if  (this.fovCounter == boid.fovs.length) {this.maxSpeedCounter++; this.fovCounter = 0;}
+    //     for(var i=0;i<this.flock.length;i++){
+    //         const boid = this.flock[i]; 
+    //         boid.updateFOV(this.fovCounter);    
+    //         if (this.fovCounter == 0){
+    //             boid.updateMaxSpeed(this.maxSpeedCounter);
+    //         }
+            
+    //         if (this.maxSpeedCounter == 0){
+    //             boid.updateVisionRange(this.visionCounter);
+    //         }
+    //     }
+    // }
+
+
+        /**
+     * cycles through the boids paramters
+     */
+        updateParameters(){
+            console.log("here")
+            const boid = this.flock[0];
+            this.maxSpeedCounter++;
+            if (this.fovCounter == boid.fovs.length) {this.visionCounter++; this.fovCounter = 0; this.maxSpeedCounter = 0;}
+            if  (this.maxSpeedCounter == boid.maxSpeeds.length) {this.fovCounter++; this.maxSpeedCounter = 0;}
+            for(var i=0;i<this.flock.length;i++){
+                const boid = this.flock[i]; 
+                boid.updateMaxSpeed(this.maxSpeedCounter);    
+                if (this.maxSpeedCounter == 0){
+                    boid.updateFOV(this.fovCounter); 
+                }
+                
+                if (this.fovCounter == 0){
+                    boid.updateVisionRange(this.visionCounter);
+                }
+            }
+        }
 }

@@ -9,7 +9,7 @@ export default class Windmill{
      * @param {number} h - The windmills height
      * @param {number} w - The windmills width
      */
-    constructor(x,y,z, d, h, w){
+    constructor(x,y,z, d, h, w, bound, r){
         //depth, width, height of windmill
         this.depth = d;
         this.height = h;
@@ -25,6 +25,7 @@ export default class Windmill{
         this.mesh = new THREE.Mesh( this.geometry, this.material );
         // gets points in windmill trajectory
         this.points = this.getPoints();
+        this.r = r
 
         // gets max X, Y, Z or windmills. i.e. topLeft, topRight, bottomRight, bottomLeft corners
         this.minZ = this.position.z - this.width / 2;
@@ -49,18 +50,22 @@ export default class Windmill{
     update(){
         const x = this.x;
         const y = this.y;
+        let adj = 0
+        if (this.r==1){
+            adj = Math.PI / 2;
+        }
 
         this.mesh.rotation.z = this.mesh.rotation.z - 0.01;
 
-        this.TRX = (x * Math.sin(this.rotation)+x);
-        this.TRY = (x * Math.cos(this.rotation)+y);
-        this.TLX = (x * Math.sin(this.rotation - Math.PI + 0.15)+x);
-        this.TLY = (x * Math.cos(this.rotation - Math.PI + 0.15))+y;
+        this.TRX = (x * Math.sin(this.rotation + adj)+x);
+        this.TRY = (x * Math.cos(this.rotation + adj)+y);
+        this.TLX = (x * Math.sin(this.rotation - Math.PI + 0.15 + adj)+x);
+        this.TLY = (x * Math.cos(this.rotation - Math.PI + 0.15 + adj))+y;
         
-        this.BLX = (x * Math.sin(this.rotation - Math.PI)+x);
-        this.BLY = (x * Math.cos(this.rotation - Math.PI)+y);
-        this.BRX = (x * Math.sin(this.rotation + 0.15)+x);
-        this.BRY = (x * Math.cos(this.rotation + 0.15)+y);
+        this.BLX = (x * Math.sin(this.rotation - Math.PI + adj)+x);
+        this.BLY = (x * Math.cos(this.rotation - Math.PI + adj)+y);
+        this.BRX = (x * Math.sin(this.rotation + 0.15 + adj)+x);
+        this.BRY = (x * Math.cos(this.rotation + 0.15 + adj)+y);
 
         this.rotation += 0.01;
         this.rotation = this.rotation % (2 * Math.PI);
@@ -97,28 +102,28 @@ export default class Windmill{
     * @param {number} z - The z-coordinate of the point.
     * @returns {boolean} - Indicates whether the point is within the windmill's boundaries.
     */
-        pointInWindmill(x, y, z){
-            const minZ = this.position.z - this.width / 2;
-            const maxZ = this.position.z + this.width / 2;
-            const line1 = {
-                a: (this.TLY - this.TRY) / (this.TLX - this.TRX),
-                b: this.TRY - ((this.TLY - this.TRY) / (this.TLX - this.TRX)) * this.TRX
-            };
-            const line2 = {
-                a: (this.BRY - this.BLY) / (this.BRX - this.BLX),
-                b: this.BLY - ((this.BRY - this.BLY) / (this.BRX - this.BLX)) * this.BLX
-            };
-            const isInBetweenLines = (
-                (y < ((line1.a * x) + line1.b) && 
-                y > ((line2.a * x) + line2.b)) ||
-                (y > ((line1.a * x) + line1.b) && 
-                y < ((line2.a * x) + line2.b))
-            );
-            if (isInBetweenLines && z > minZ && z < maxZ) {
-                return true;
-            }
-            return false;
-        }   
+    pointInWindmill(x, y, z){
+        const minZ = this.position.z - this.width / 2;
+        const maxZ = this.position.z + this.width / 2;
+        const line1 = {
+            a: (this.TLY - this.TRY) / (this.TLX - this.TRX),
+            b: this.TRY - ((this.TLY - this.TRY) / (this.TLX - this.TRX)) * this.TRX
+        };
+        const line2 = {
+            a: (this.BRY - this.BLY) / (this.BRX - this.BLX),
+            b: this.BLY - ((this.BRY - this.BLY) / (this.BRX - this.BLX)) * this.BLX
+        };
+        const isInBetweenLines = (
+            (y < ((line1.a * x) + line1.b) && 
+            y > ((line2.a * x) + line2.b)) ||
+            (y > ((line1.a * x) + line1.b) && 
+            y < ((line2.a * x) + line2.b))
+        );
+        if (isInBetweenLines && z > minZ && z < maxZ) {
+            return true;
+        }
+        return false;
+    }   
     
 
     /**

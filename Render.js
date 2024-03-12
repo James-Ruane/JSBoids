@@ -81,11 +81,11 @@ export default class SimpleRenderer {
         const boids = this.flock.getFlock();
         boids.forEach(boid => {  
             if (boid.dead){
-                this.scene.add(boid.deadMesh);
-                this.scene.remove(boid.mesh);
-                boid.deadMesh.position.x = boid.mesh.position.x;
-                boid.deadMesh.position.y = boid.mesh.position.y;
-                boid.deadMesh.position.z = boid.mesh.position.z;
+                //this.scene.add(boid.deadMesh);
+                this.scene.remove(boid.mesh); // TODO: output collision positions for each boid, can then visualize that
+                // boid.deadMesh.position.x = boid.mesh.position.x;
+                // boid.deadMesh.position.y = boid.mesh.position.y;
+                // boid.deadMesh.position.z = boid.mesh.position.z;
             }  else{
                 this.scene.add(boid.mesh);
                 boid.mesh.position.x = boid.position.x;
@@ -99,7 +99,7 @@ export default class SimpleRenderer {
             this.scene.add(mill.mesh);
             mill.mesh.position.x = mill.position.x;
             mill.mesh.position.y = mill.position.y;
-            mill.mesh.position.z = mill.position.z;            
+            mill.mesh.position.z = mill.position.z;  
         });
 
         this.renderer.render(this.scene, this.camera);

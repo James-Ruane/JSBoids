@@ -11,9 +11,14 @@ class Application {
         this.simpleRenderer = undefined;
         this.boids = undefined;
         this.flock = undefined;
-        this.numBoids = 300; 
-        this.bound = new THREE.Vector3(125, 75, 375);  
+        this.numBoids = 100; 
+        this.bound = new THREE.Vector3(125, 75, 675);  //250, 250
         this.headless = false;
+        this.iterations = 0;
+        this.speciesIterations = 0;
+        this.runNo = 0;
+        this.frames = 0;
+        this.setup = true;
     }
 
     /**
@@ -38,19 +43,57 @@ class Application {
     }
 
     /**
-     * Initiates the rendering loop for the simulation and gathers data for analysis.
+     * Initiates the rendering loop for the simulation and gathers data for analysis and resets simulation
      */
-    render() {  // TODO: Gather data for analysis
+    render() {
+        const boid = this.flock.flock[0];   
+        if (this.iterations == 50) {
+            const blob = new Blob([this.flock.content], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = (Math.round((360 * (boid.fov + (Math.PI / 2))) / Math.PI).toString()) + ','+ boid.maxSpeed.toString() + ',' + boid.vision.toString() +'.txt';
+            this.runNo++;
+            link.click();
+            this.iterations = 0;
+            this.flock.content = "";
+        }
         // Initiates the rendering loop by calling 'render' method using requestAnimationFrame
         window.requestAnimationFrame(this.render.bind(this), 1000/30); // Call at 30 FPS
-
-        this.flock.iterate(); // Update flock behavior and state
-  
-        if (!this.headless) {
-            this.simpleRenderer.render(); // Render the updated state of the simulation 
-        }   
+        this.frames++;
+        if (this.setup){
+            const boid = this.flock.flock[0];
+            console.log("config for run");
+            this.flock.content += "\n@"
+            console.log("FOV: ", Math.round((360 * (boid.fov + (Math.PI / 2))) / Math.PI));
+            this.flock.content += "\nFOV: " + (Math.round((360 * (boid.fov + (Math.PI / 2))) / Math.PI).toString());
+            console.log("Max Speed: ", boid.maxSpeed);
+            this.flock.content += ("\nMax Speed: " + boid.maxSpeed.toString());
+            console.log("Max Vision: ", boid.vision);
+            this.flock.content += ("\nMax Vision: " + boid.vision.toString());
+            this.setup = false;
+        }
+        if ((this.flock.collisionNum + this.flock.passedMillNum < this.numBoids * 0.9) && (this.frames < 2400)){ 
+            this.flock.iterate(); // Update flock behavior and state
+            if (!this.headless) {
+                this.simpleRenderer.render(); // Render the updated state of the simulation 
+            }
+        }else{
+            if (this.frames >= 4800){this.flock.content += "=====TIMED_OUT====="; console.log("timeout")}
+            this.flock.reset() // Reset flock behavior and state
+            this.frames = 0;
+            this.speciesIterations++;
+            this.setup = true;
+            if (this.speciesIterations == 1){
+                this.flock.updateParameters(); // Update parameters
+                this.speciesIterations = 0;
+            }
+            this.iterations++;
+        }
     }
 
 }
 
-document.addEventListener('DOMContentLoaded', (new Application()).init());
+document.addEventListener('DOMContentLoaded', () => {
+    const app = new Application();
+    app.init();
+});
