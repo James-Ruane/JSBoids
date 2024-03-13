@@ -9,11 +9,12 @@ export default class Windmill{
      * @param {number} h - The windmills height
      * @param {number} w - The windmills width
      */
-    constructor(x,y,z, d, h, w, bound, r){
+    constructor(x,y,z, d, h, w, bound, r, flockHelper){
         //depth, width, height of windmill
         this.depth = d;
         this.height = h;
         this.width = w;
+        this.flockHelper = flockHelper;
         // position of centre of windmill
         this.x = x;
         this.y = y;
@@ -42,6 +43,9 @@ export default class Windmill{
         this.BRY = 0;
 
         this.rotation = 1.5;
+
+        this.group = new THREE.Group;
+        this.group.add(this.mesh);
     }
 
     /**
@@ -52,10 +56,10 @@ export default class Windmill{
         const y = this.y;
         let adj = 0
         if (this.r==1){
-            adj = Math.PI / 2;
+            adj = Math.PI;
         }
 
-        this.mesh.rotation.z = this.mesh.rotation.z - 0.01;
+        //this.mesh.rotation.z = this.mesh.rotation.z - 0.01;
 
         this.TRX = (x * Math.sin(this.rotation + adj)+x);
         this.TRY = (x * Math.cos(this.rotation + adj)+y);
@@ -66,6 +70,8 @@ export default class Windmill{
         this.BLY = (x * Math.cos(this.rotation - Math.PI + adj)+y);
         this.BRX = (x * Math.sin(this.rotation + 0.15 + adj)+x);
         this.BRY = (x * Math.cos(this.rotation + 0.15 + adj)+y);
+
+        this.flockHelper.group.rotation.z -= 0.001
 
         this.rotation += 0.01;
         this.rotation = this.rotation % (2 * Math.PI);

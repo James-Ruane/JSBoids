@@ -4,9 +4,10 @@ export default class SimpleRenderer {
      * @param {Array} flock - The flock array containing boids of this species.
      * @param {Object} bound - The bound object containing the x,y,z dimensions of the simulation area
      */
-    constructor(bound, flock) {  
+    constructor(bound, flock, flockHelper) {  
         this.flock = flock
         this.bound = bound;
+        this.flockHelper = flockHelper
         this.degX = 90;
         this.degY = 75;
         this.cameraMax = Math.max(this.bound.x, this.bound.y, this.bound.z);
@@ -96,10 +97,20 @@ export default class SimpleRenderer {
 
         const mills = this.flock.getWindmills();
         mills.forEach(mill => {
-            this.scene.add(mill.mesh);
-            mill.mesh.position.x = mill.position.x;
-            mill.mesh.position.y = mill.position.y;
-            mill.mesh.position.z = mill.position.z;  
+            //this.scene.add(mill.mesh);
+            // mill.mesh.position.x = mill.position.x;
+            // mill.mesh.position.y = mill.position.y;
+            // mill.mesh.position.z = mill.position.z;  
+            this.scene.add(this.flockHelper.group)
+            // this.geometry = new THREE.SphereGeometry( 1, 64, 32 );    
+            // this.material = new THREE.MeshBasicMaterial( { color: 0x0000ff } );  
+            // this.mesh3 = new THREE.Mesh( this.geometry, this.material );
+            // this.scene.add(this.mesh3);
+            // this.mesh3.position.x = mill.TLX
+            // this.mesh3.position.y = mill.TLY
+            // this.mesh3.position.z = mill.maxZ
+
+            
         });
 
         this.renderer.render(this.scene, this.camera);

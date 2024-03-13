@@ -11,7 +11,7 @@ class Application {
         this.simpleRenderer = undefined;
         this.boids = undefined;
         this.flock = undefined;
-        this.numBoids = 100; 
+        this.numBoids = 1; 
         this.bound = new THREE.Vector3(125, 75, 675);  //250, 250
         this.headless = false;
         this.iterations = 0;
@@ -28,16 +28,17 @@ class Application {
         // Create a new flock object with provided boundaries
         this.flock = new Flock(this.bound, this.headless);
 
-        // Initialize a SimpleRenderer with boundaries and the flock
-        if (!this.headless){
-            this.simpleRenderer = new SimpleRenderer(this.bound, this.flock);
-            this.simpleRenderer.init(); 
-        }
-        // Create a flockHelper object with the flock and boundaries
         this.flockHelper = new flockHelper(this.flock, this.bound);
         this.flockHelper.addBoids(this.numBoids); // Add boids to the flock
         this.flockHelper.addWindmill(); // Add windmill to the simulation
 
+
+        // Initialize a SimpleRenderer with boundaries and the flock
+        if (!this.headless){
+            this.simpleRenderer = new SimpleRenderer(this.bound, this.flock, this.flockHelper);
+            this.simpleRenderer.init(); 
+        }
+        // Create a flockHelper object with the flock and boundaries
         // Start rendering the simulation by calling the 'render' method using requestAnimationFrame
         window.requestAnimationFrame(this.render.bind(this), 1000/30);
     }
