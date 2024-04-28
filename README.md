@@ -1,5 +1,4 @@
 # JSBoids
-# For ma diss
 
   
 
